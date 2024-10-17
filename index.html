@@ -45,6 +45,20 @@
             transition: height 0.5s, transform 0.5s;
         }
 
+        #alturaLabel {
+            position: absolute;
+            bottom: 100%; /* Acima do parafuso */
+            left: 50%;
+            transform: translateX(-50%);
+            background: #007BFF;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 12px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
         #inputs {
             margin-top: 20px;
         }
@@ -72,18 +86,14 @@
         button:hover {
             background-color: #0056b3;
         }
-
-        #alturaDisplay {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #333;
-        }
     </style>
 </head>
 <body>
     <div id="container">
         <div id="base">
-            <div id="parafuso"></div>
+            <div id="parafuso">
+                <div id="alturaLabel">100mm</div>
+            </div>
         </div>
         <div id="inputs">
             <label for="altura">Movimento (mm): </label>
@@ -91,12 +101,11 @@
             <button onclick="apertarParafuso()">Apertar</button>
             <button onclick="afrouxarParafuso()">Afrouxar</button>
         </div>
-        <div id="alturaDisplay">Altura do parafuso: 100mm</div>
     </div>
 
     <script>
         const parafuso = document.getElementById('parafuso');
-        const alturaDisplay = document.getElementById('alturaDisplay');
+        const alturaLabel = document.getElementById('alturaLabel');
 
         let alturaAtual = 100; // Altura inicial do parafuso em mm
 
@@ -123,7 +132,8 @@
         function atualizarParafuso() {
             const novaAlturaPx = (alturaAtual / 100) * 100; // Converter mm para altura do parafuso (100px = 100mm)
             parafuso.style.height = `${novaAlturaPx}px`;
-            alturaDisplay.textContent = `Altura do parafuso: ${alturaAtual.toFixed(2)}mm`;
+            alturaLabel.textContent = `${alturaAtual.toFixed(2)}mm`;
+            alturaLabel.style.bottom = `${novaAlturaPx + 5}px`; // Ajusta a posição do rótulo conforme a altura do parafuso
         }
     </script>
 </body>
