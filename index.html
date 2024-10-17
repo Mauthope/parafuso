@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parafuso Animado</title>
+    <style>
+        #parafuso {
+            width: 20px;
+            height: 100px;
+            background-color: #555;
+            margin: 50px auto;
+            position: relative;
+            transition: transform 0.5s;
+        }
+
+        #container {
+            text-align: center;
+        }
+
+        #inputs {
+            margin-top: 20px;
+        }
+
+        input {
+            margin: 5px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="parafuso"></div>
+        <div id="inputs">
+            <label for="altura">Altura (mm): </label>
+            <input type="number" id="altura" placeholder="Digite a altura em mm">
+            <button onclick="apertarParafuso()">Apertar</button>
+            <button onclick="afrouxarParafuso()">Afrouxar</button>
+        </div>
+    </div>
+
+    <script>
+        const parafuso = document.getElementById('parafuso');
+
+        function apertarParafuso() {
+            const altura = document.getElementById('altura').value;
+            if (altura) {
+                parafuso.style.transform = `translateY(-${altura}px)`;
+            }
+        }
+
+        function afrouxarParafuso() {
+            const altura = document.getElementById('altura').value;
+            if (altura) {
+                parafuso.style.transform = `translateY(${altura}px)`;
+            }
+        }
+    </script>
+</body>
+</html>
