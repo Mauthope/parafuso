@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parafuso Animado</title>
+    <title>Parafuso Animado com Base</title>
     <style>
+        #container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #base {
+            width: 60px;
+            height: 20px;
+            background-color: #333;
+            margin: 0 auto;
+            position: relative;
+        }
+
         #parafuso {
             width: 20px;
             height: 100px;
             background-color: #555;
-            margin: 50px auto;
-            position: relative;
-            transition: transform 0.5s;
-        }
-
-        #container {
-            text-align: center;
+            position: absolute;
+            bottom: 20px; /* Para posicionar sobre a base */
+            left: 50%;
+            transform: translateX(-50%);
+            transition: height 0.5s, transform 0.5s;
         }
 
         #inputs {
@@ -26,34 +37,57 @@
             margin: 5px;
             padding: 5px;
         }
+
+        #alturaDisplay {
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div id="container">
-        <div id="parafuso"></div>
+        <div id="base">
+            <div id="parafuso"></div>
+        </div>
         <div id="inputs">
-            <label for="altura">Altura (mm): </label>
-            <input type="number" id="altura" placeholder="Digite a altura em mm">
+            <label for="altura">Movimento (mm): </label>
+            <input type="number" id="altura" placeholder="Digite o valor em mm">
             <button onclick="apertarParafuso()">Apertar</button>
             <button onclick="afrouxarParafuso()">Afrouxar</button>
         </div>
+        <div id="alturaDisplay">Altura do parafuso: 100mm</div>
     </div>
 
     <script>
         const parafuso = document.getElementById('parafuso');
+        const alturaDisplay = document.getElementById('alturaDisplay');
+
+        let alturaAtual = 100; // Altura inicial do parafuso em mm
 
         function apertarParafuso() {
-            const altura = document.getElementById('altura').value;
-            if (altura) {
-                parafuso.style.transform = `translateY(-${altura}px)`;
+            const movimento = parseFloat(document.getElementById('altura').value);
+            if (movimento && alturaAtual - movimento >= 0) {
+                alturaAtual -= movimento;
+                atualizarParafuso();
+            } else {
+                alert('Valor inválido ou movimento muito grande.');
             }
         }
 
         function afrouxarParafuso() {
-            const altura = document.getElementById('altura').value;
-            if (altura) {
-                parafuso.style.transform = `translateY(${altura}px)`;
+            const movimento = parseFloat(document.getElementById('altura').value);
+            if (movimento && alturaAtual + movimento <= 100) {
+                alturaAtual += movimento;
+                atualizarParafuso();
+            } else {
+                alert('Valor inválido ou movimento muito grande.');
             }
+        }
+
+        function atualizarParafuso() {
+            const novaAlturaPx = (alturaAtual / 100) * 100; // Converter mm para altura do parafuso (100px = 100mm)
+            parafuso.style.height = `${novaAlturaPx}px`;
+            alturaDisplay.textContent = `Altura do parafuso: ${alturaAtual.toFixed(2)}mm`;
         }
     </script>
 </body>
