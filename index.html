@@ -27,18 +27,26 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
             background-color: #ffffff; 
         }
-        select {
+        .checkbox-group {
             margin: 20px;
-            padding: 10px;
+        }
+        .checkbox-group label {
+            margin-right: 15px;
+        }
+        button {
+            padding: 10px 20px;
             font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
         }
     </style>
 </head>
 <body>
     <h1>Média de Produção por Máquina por Turno</h1>
-    <select id="machineSelect" multiple></select>
+    <div class="checkbox-group" id="checkboxGroup"></div>
     <button id="updateChart">Atualizar Gráfico</button>
     <canvas id="myChart"></canvas>
 
@@ -61,7 +69,7 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
-                    populateSelect();
+                    populateCheckboxes();
                     createChart(labels, allTurno1Data, allTurno2Data); // Criar o gráfico inicial
                 })
                 .catch(error => {
@@ -94,18 +102,26 @@
             allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
         }
 
-        function populateSelect() {
-            const machineSelect = document.getElementById('machineSelect');
+        function populateCheckboxes() {
+            const checkboxGroup = document.getElementById('checkboxGroup');
             labels.forEach(machine => {
-                const option = document.createElement('option');
-                option.value = machine;
-                option.textContent = machine;
-                machineSelect.appendChild(option);
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = machine;
+                checkbox.id = machine;
+                checkbox.checked = true; // Marcar como selecionado por padrão
+
+                const label = document.createElement('label');
+                label.htmlFor = machine;
+                label.textContent = machine;
+
+                checkboxGroup.appendChild(checkbox);
+                checkboxGroup.appendChild(label);
             });
         }
 
         document.getElementById('updateChart').addEventListener('click', () => {
-            const selectedMachines = Array.from(document.getElementById('machineSelect').selectedOptions).map(option => option.value);
+            const selectedMachines = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked')).map(input => input.value);
             const filteredTurno1Data = selectedMachines.map(machine => allTurno1Data[labels.indexOf(machine)]);
             const filteredTurno2Data = selectedMachines.map(machine => allTurno2Data[labels.indexOf(machine)]);
 
@@ -140,6 +156,9 @@
                     plugins: {
                         legend: {
                             position: 'top',
+                            labels: {
+                                color: 'black', // Cor da legenda em preto
+                            }
                         },
                         title: {
                             display: true,
@@ -149,7 +168,7 @@
                             anchor: 'end',
                             align: 'end',
                             formatter: (value) => value.toFixed(2), // Formata os valores
-                            color: '#fff',
+                            color: 'black', // Cor dos rótulos em preto
                         }
                     },
                     scales: {
