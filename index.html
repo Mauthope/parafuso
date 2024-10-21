@@ -81,7 +81,8 @@
                     const tipo = row[1]?.toString();
                     const valor = parseFloat(row[2]);
 
-                    if (!isNaN(valor) && turno && tipo) {
+                    // Ignorar valores não numéricos ou menores que ou iguais a zero
+                    if (!isNaN(valor) && valor > 0 && turno && tipo) {
                         if (!results[tipo]) {
                             results[tipo] = {};
                         }
@@ -99,9 +100,11 @@
                     processedData[tipo] = {};
                     for (const turno in results[tipo]) {
                         const valores = results[tipo][turno];
-                        const soma = valores.reduce((acc, curr) => acc + curr, 0);
-                        const media = soma / valores.length;
-                        processedData[tipo][turno] = media || 0; // Certifica que valores NaN são convertidos para 0
+                        if (valores.length > 0) {
+                            const soma = valores.reduce((acc, curr) => acc + curr, 0);
+                            const media = soma / valores.length;
+                            processedData[tipo][turno] = media;
+                        }
                     }
                 }
 
