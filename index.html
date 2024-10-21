@@ -19,21 +19,35 @@
             color: #4a4a4a;
         }
         canvas {
-            max-width: 800px;  /* Aumenta a largura máxima do gráfico */
-            width: 100%;       /* Permite que o gráfico ocupe toda a largura disponível */
-            height: 400px;     /* Define uma altura fixa para o gráfico */
+            max-width: 800px;  
+            width: 100%;       
+            height: 400px;     
             margin: auto;
-            border-radius: 10px; /* Bordas arredondadas */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
-            background-color: #ffffff; /* Fundo branco */
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+            background-color: #ffffff; 
+        }
+        select {
+            margin: 20px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
     <h1>Média de Produção por Máquina por Turno</h1>
+    <select id="machineSelect" multiple></select>
+    <button id="updateChart">Atualizar Gráfico</button>
     <canvas id="myChart"></canvas>
 
     <script>
+        let machineData = {};
+        let labels = [];
+        let allTurno1Data = [];
+        let allTurno2Data = [];
+
         window.onload = function() {
             fetch('acab.xlsx')
                 .then(response => {
@@ -47,6 +61,8 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
+                    populateSelect();
+                    createChart(labels, allTurno1Data, allTurno2Data); // Criar o gráfico inicial
                 })
                 .catch(error => {
                     console.error(error);
@@ -55,7 +71,6 @@
         };
 
         function processData(data) {
-            const machineData = {};
             const countData = {}; // Para contar as ocorrências
 
             // Ignora o cabeçalho
@@ -74,19 +89,35 @@
             }
 
             // Prepara os dados para o gráfico
-            const labels = Object.keys(machineData);
-            const turno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
-            const turno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
-
-            createChart(labels, turno1Data, turno2Data);
+            labels = Object.keys(machineData);
+            allTurno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
+            allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
         }
 
-        function createChart(labels, turno1Data, turno2Data) {
+        function populateSelect() {
+            const machineSelect = document.getElementById('machineSelect');
+            labels.forEach(machine => {
+                const option = document.createElement('option');
+                option.value = machine;
+                option.textContent = machine;
+                machineSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById('updateChart').addEventListener('click', () => {
+            const selectedMachines = Array.from(document.getElementById('machineSelect').selectedOptions).map(option => option.value);
+            const filteredTurno1Data = selectedMachines.map(machine => allTurno1Data[labels.indexOf(machine)]);
+            const filteredTurno2Data = selectedMachines.map(machine => allTurno2Data[labels.indexOf(machine)]);
+
+            createChart(selectedMachines, filteredTurno1Data, filteredTurno2Data);
+        });
+
+        function createChart(selectedLabels, turno1Data, turno2Data) {
             const ctx = document.getElementById('myChart').getContext('2d');
             const myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: selectedLabels,
                     datasets: [
                         {
                             label: 'Média de Produção Turno 1',
@@ -113,6 +144,12 @@
                         title: {
                             display: true,
                             text: 'Média de Produção por Máquina por Turno',
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            formatter: (value) => value.toFixed(2), // Formata os valores
+                            color: '#fff',
                         }
                     },
                     scales: {
@@ -130,9 +167,11 @@
                             }
                         }
                     }
-                }
+                },
+                plugins: [ChartDataLabels] // Plugin para rótulos de dados
             });
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script> <!-- Plugin para rótulos de dados -->
 </body>
 </html>
