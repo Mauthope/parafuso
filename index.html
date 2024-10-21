@@ -73,76 +73,65 @@
                 }
             }
 
-function processData(data) {
-    const results = {};
+            function processData(data) {
+                const results = {};
 
-    data.slice(1).forEach(row => {
-        const turno = row[0]?.toString();
-        const tipo = row[1]?.toString();
-        const valor = parseFloat(row[2]);
+                data.slice(1).forEach(row => {
+                    const turno = row[0]?.toString();
+                    const tipo = row[1]?.toString();
+                    const valor = parseFloat(row[2]);
 
-        // Ignorar valores não numéricos, nulos ou menores que ou iguais a zero
-        if (!isNaN(valor) && valor > 0 && turno && tipo) {
-            if (!results[tipo]) {
-                results[tipo] = { '1': [], '2': [] };
+                    if (!isNaN(valor) && turno && tipo) {
+                        if (!results[tipo]) {
+                            results[tipo] = {};
+                        }
+                        if (!results[tipo][turno]) {
+                            results[tipo][turno] = [];
+                        }
+                        results[tipo][turno].push(valor);
+                    }
+                });
+
+                console.log("Dados Processados:", results);
+
+                const processedData = {};
+                for (const tipo in results) {
+                    processedData[tipo] = {};
+                    for (const turno in results[tipo]) {
+                        const valores = results[tipo][turno];
+                        const media = valores.reduce((acc, curr) => acc + curr, 0) / valores.length;
+                        processedData[tipo][turno] = media;
+                    }
+                }
+
+                console.log("Médias Calculadas:", processedData);
+                return processedData;
             }
-            if (results[tipo][turno]) {
-                results[tipo][turno].push(valor);
-            }
-        }
-    });
-
-    const processedData = {};
-    for (const tipo in results) {
-        processedData[tipo] = {};
-        for (const turno in results[tipo]) {
-            const valores = results[tipo][turno].filter(v => v > 0); // Filtra valores válidos
-            if (valores.length > 0) {
-                const soma = valores.reduce((acc, curr) => acc + curr, 0);
-                const media = soma / valores.length;
-                processedData[tipo][turno] = media;
-            } else {
-                processedData[tipo][turno] = null; // Deixe como null para diferenciar de zero
-            }
-        }
-    }
-
-    console.log('Processed Data:', processedData); // Verificar os dados processados
-    return processedData;
-}
-
 
             function generateChart(data) {
                 const labels = Object.keys(data);
+                const datasets = [];
+
                 const turnos = ['1', '2'];
 
-                const dataForTurno1 = labels.map(tipo => data[tipo]['1'] || 0);
-                const dataForTurno2 = labels.map(tipo => data[tipo]['2'] || 0);
-
-                console.log("Dados para Turno 1:", dataForTurno1); // Debug
-                console.log("Dados para Turno 2:", dataForTurno2); // Debug
+                turnos.forEach(turno => {
+                    const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
+                    console.log(`Dados do Turno ${turno}:`, dataForTurno);
+                    datasets.push({
+                        label: `Turno ${turno}`,
+                        data: dataForTurno,
+                        backgroundColor: turno === '1' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
+                        borderColor: turno === '1' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    });
+                });
 
                 const ctx = document.getElementById('myChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels,
-                        datasets: [
-                            {
-                                label: 'Turno 1',
-                                data: dataForTurno1,
-                                backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Turno 2',
-                                data: dataForTurno2,
-                                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                                borderColor: 'rgba(54, 162, 235, 1)',
-                                borderWidth: 1
-                            }
-                        ]
+                        datasets
                     },
                     options: {
                         responsive: true,
