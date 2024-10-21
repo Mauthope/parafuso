@@ -82,11 +82,14 @@
                     const tipo = row[1]?.toString();
                     const valor = parseFloat(row[2]);
 
-                    if (!isNaN(valor) && turno && tipo) {
+                    // Verifica se o tipo e turno existem
+                    if (turno && tipo && !isNaN(valor)) {
                         if (!results[tipo]) {
                             results[tipo] = { '1': [], '2': [] }; // Inicializa turnos
                         }
-                        results[tipo][turno].push(valor);
+                        if (turno === '1' || turno === '2') {
+                            results[tipo][turno].push(valor);
+                        }
                     }
                 });
 
@@ -97,7 +100,7 @@
                     processedData[tipo] = {};
                     for (const turno in results[tipo]) {
                         const valores = results[tipo][turno];
-                        const media = valores.reduce((acc, curr) => acc + curr, 0) / valores.length;
+                        const media = valores.length ? (valores.reduce((acc, curr) => acc + curr, 0) / valores.length) : 0; // Evita NaN se não houver valores
                         processedData[tipo][turno] = media;
                     }
                 }
@@ -126,22 +129,11 @@
 
                 const ctx = document.getElementById('myChart').getContext('2d');
 
-                // Alteração para fazer as barras lado a lado
-                const barWidth = 0.35; // Largura da barra
-                const index = labels.map((_, i) => i); // Índices para os rótulos
-
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: datasets.map((dataset, index) => ({
-                            ...dataset,
-                            // Alterando a posição da barra para exibição lado a lado
-                            data: dataset.data.map((d, i) => ({
-                                x: index + (index * barWidth),
-                                y: d
-                            }))
-                        }))
+                        datasets: datasets
                     },
                     options: {
                         responsive: true,
