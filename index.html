@@ -42,6 +42,10 @@
                 generateChart(jsonData);
             };
 
+            req.onerror = function (e) {
+                console.error("Erro ao carregar a planilha", e);
+            };
+
             req.send();
         }
 
@@ -56,6 +60,9 @@
                 const turno = row[0]; // Coluna 1
                 const tipo = row[1]; // Coluna 2
                 const valor = row[2]; // Coluna 3
+
+                // Verifica se o valor da coluna 1 começa com "Turno"
+                if (typeof valor !== 'number' || !turno.startsWith("Turno")) return; 
 
                 if (!turnos[turno]) {
                     turnos[turno] = {};
@@ -94,7 +101,7 @@
                 })),
             };
 
-            // Configura o gráfico
+            // Cria o gráfico
             const ctx = document.getElementById('myChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
