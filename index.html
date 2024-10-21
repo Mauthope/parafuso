@@ -77,11 +77,11 @@
                 const results = {};
 
                 data.slice(1).forEach(row => {
-                    const turno = row[0];
-                    const tipo = row[1];
+                    const turno = row[0]?.toString();
+                    const tipo = row[1]?.toString();
                     const valor = parseFloat(row[2]);
 
-                    if (!isNaN(valor)) {
+                    if (!isNaN(valor) && turno && tipo) {
                         if (!results[tipo]) {
                             results[tipo] = {};
                         }
@@ -91,6 +91,8 @@
                         results[tipo][turno].push(valor);
                     }
                 });
+
+                console.log("Dados Processados:", results);
 
                 const processedData = {};
                 for (const tipo in results) {
@@ -102,6 +104,7 @@
                     }
                 }
 
+                console.log("Médias Calculadas:", processedData);
                 return processedData;
             }
 
@@ -113,6 +116,7 @@
 
                 turnos.forEach(turno => {
                     const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
+                    console.log(`Dados do Turno ${turno}:`, dataForTurno);
                     datasets.push({
                         label: `Turno ${turno}`,
                         data: dataForTurno,
