@@ -109,56 +109,62 @@
             }
 
             function generateChart(data) {
-                const labels = Object.keys(data);
-                const datasets = [];
+    const labels = Object.keys(data);
+    const datasets = [];
 
-                const turnos = ['1', '2'];
+    const turnos = ['1', '2'];
 
-                turnos.forEach(turno => {
-                    const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
-                    console.log(`Dados do Turno ${turno}:`, dataForTurno);
-                    datasets.push({
-                        label: `Turno ${turno}`,
-                        data: dataForTurno,
-                        backgroundColor: turno === '1' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
-                        borderColor: turno === '1' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    });
-                });
+    turnos.forEach(turno => {
+        const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
+        console.log(`Dados do Turno ${turno}:`, dataForTurno);
+        datasets.push({
+            label: `Turno ${turno}`,
+            data: dataForTurno,
+            backgroundColor: turno === '1' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
+            borderColor: turno === '1' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        });
+    });
 
-                const ctx = document.getElementById('myChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Média de Valores por Tipo e Turno'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Média'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Tipo'
-                                }
-                            }
-                        }
+    if (datasets.length === 0) {
+        console.error("Nenhum dado disponível para gerar o gráfico.");
+        return;
+    }
+
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Média de Valores por Tipo e Turno'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Média'
                     }
-                });
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Tipo'
+                    }
+                }
             }
+        }
+    });
+}
+
 
             loadAndProcessExcel();
         });
