@@ -55,6 +55,7 @@
         let labels = [];
         let allTurno1Data = [];
         let allTurno2Data = [];
+        let myChart;
 
         window.onload = function() {
             fetch('acab.xlsx')
@@ -129,8 +130,11 @@
         });
 
         function createChart(selectedLabels, turno1Data, turno2Data) {
+            if (myChart) {
+                myChart.destroy(); // Destrói o gráfico existente se houver
+            }
             const ctx = document.getElementById('myChart').getContext('2d');
-            const myChart = new Chart(ctx, {
+            myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: selectedLabels,
@@ -155,10 +159,7 @@
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'top',
-                            labels: {
-                                color: 'black', // Cor da legenda em preto
-                            }
+                            display: false, // Remove a legenda
                         },
                         title: {
                             display: true,
