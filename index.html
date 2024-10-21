@@ -1,170 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico de Médias por Tipo e Turno</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <title>Gráfico de Médias</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            margin: 20px;
         }
-
         h1 {
-            font-size: 1.8em;
-            color: #333;
-            margin-bottom: 20px;
+            text-align: center;
         }
-
-        #myChart {
-            background: #fff;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
         canvas {
-            max-width: 100%;
-            height: auto;
-        }
-
-        .loading {
-            font-size: 1.2em;
-            color: #555;
+            max-width: 600px;
+            margin: auto;
         }
     </style>
 </head>
 <body>
-    <h1>Gráfico de Médias por Tipo e Turno</h1>
-    <div id="chartContainer">
-        <canvas id="myChart"></canvas>
-        <div class="loading" id="loadingMessage">Carregando dados...</div>
-    </div>
-
+    <h1>Gráfico de Médias</h1>
+    <canvas id="myChart" width="400" height="200"></canvas>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fileName = 'acab.xlsx';
+        // Função para carregar a planilha e processar os dados
+        function processSpreadsheet() {
+            const url = 'acab.xlsx'; // Nome do arquivo da planilha
+            const req = new XMLHttpRequest();
+            req.open('GET', url, true);
+            req.responseType = 'arraybuffer';
 
-            async function loadAndProcessExcel() {
-                try {
-                    const response = await fetch(fileName);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
+            req.onload = function (e) {
+                const data = new Uint8Array(req.response);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    const data = processData(jsonData);
+                // Converte a planilha para JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                generateChart(jsonData);
+            };
 
-                    generateChart(data);
-                    document.getElementById('loadingMessage').style.display = 'none';
-                } catch (error) {
-                    console.error('Erro ao carregar o arquivo Excel:', error);
-                    document.getElementById('loadingMessage').textContent = 'Erro ao carregar os dados.';
+            req.send();
+        }
+
+        // Função para gerar o gráfico
+        function generateChart(data) {
+            const turnos = {};
+            
+            // Percorre os dados e agrupa por turno e tipo
+            data.forEach((row, index) => {
+                if (index === 0) return; // Ignora cabeçalho
+
+                const turno = row[0]; // Coluna 1
+                const tipo = row[1]; // Coluna 2
+                const valor = row[2]; // Coluna 3
+
+                if (!turnos[turno]) {
+                    turnos[turno] = {};
+                }
+                if (!turnos[turno][tipo]) {
+                    turnos[turno][tipo] = { sum: 0, count: 0 };
+                }
+
+                turnos[turno][tipo].sum += valor;
+                turnos[turno][tipo].count += 1;
+            });
+
+            // Calcula as médias
+            const labels = [];
+            const datasets = [];
+            
+            for (const turno in turnos) {
+                labels.push(turno);
+
+                for (const tipo in turnos[turno]) {
+                    const media = turnos[turno][tipo].sum / turnos[turno][tipo].count;
+                    if (!datasets[tipo]) {
+                        datasets[tipo] = { label: tipo, data: [], backgroundColor: randomColor() };
+                    }
+                    datasets[tipo].data.push(media);
                 }
             }
 
-            function processData(data) {
-                const results = {};
+            // Cria os dados para o gráfico
+            const chartData = {
+                labels: labels,
+                datasets: datasets.map(dataset => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    backgroundColor: dataset.backgroundColor,
+                })),
+            };
 
-                // Processa os dados
-                data.slice(1).forEach(row => {
-                    const turno = row[0]?.toString();
-                    const tipo = row[1]?.toString();
-                    const valor = parseFloat(row[2]);
-
-                    // Verifica se o tipo e turno existem
-                    if (turno && tipo && !isNaN(valor)) {
-                        if (!results[tipo]) {
-                            results[tipo] = { '1': [], '2': [] }; // Inicializa turnos
-                        }
-                        if (turno === '1' || turno === '2') {
-                            results[tipo][turno].push(valor);
-                        }
-                    }
-                });
-
-                console.log("Dados Processados:", results);
-
-                const processedData = {};
-                for (const tipo in results) {
-                    processedData[tipo] = {};
-                    for (const turno in results[tipo]) {
-                        const valores = results[tipo][turno];
-                        const media = valores.length ? (valores.reduce((acc, curr) => acc + curr, 0) / valores.length) : 0; // Evita NaN se não houver valores
-                        processedData[tipo][turno] = media;
-                    }
-                }
-
-                console.log("Médias Calculadas:", processedData);
-                return processedData;
-            }
-
-            function generateChart(data) {
-                const labels = Object.keys(data);
-                const datasets = [];
-
-                const turnos = ['1', '2'];
-
-                // Criação dos datasets para os turnos
-                turnos.forEach(turno => {
-                    const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
-                    datasets.push({
-                        label: `Turno ${turno}`,
-                        data: dataForTurno,
-                        backgroundColor: turno === '1' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
-                        borderColor: turno === '1' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    });
-                });
-
-                const ctx = document.getElementById('myChart').getContext('2d');
-
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: datasets
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Média de Valores por Tipo e Turno'
-                            }
+            // Configura o gráfico
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
                         },
-                        scales: {
-                            x: {
-                                stacked: false, // Desabilita o empilhamento
-                                title: {
-                                    display: true,
-                                    text: 'Tipo'
-                                }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Média'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+                    },
+                },
+            });
+        }
 
-            loadAndProcessExcel();
-        });
+        // Função para gerar uma cor aleatória
+        function randomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Inicia o processamento ao carregar a página
+        window.onload = processSpreadsheet;
     </script>
 </body>
 </html>
