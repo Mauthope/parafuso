@@ -99,8 +99,9 @@
                     processedData[tipo] = {};
                     for (const turno in results[tipo]) {
                         const valores = results[tipo][turno];
-                        const media = valores.reduce((acc, curr) => acc + curr, 0) / valores.length;
-                        processedData[tipo][turno] = media;
+                        const soma = valores.reduce((acc, curr) => acc + curr, 0);
+                        const media = soma / valores.length;
+                        processedData[tipo][turno] = media || 0; // Certifica que valores NaN são convertidos para 0
                     }
                 }
 
