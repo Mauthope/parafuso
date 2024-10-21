@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Produção por Máquina</title>
+    <title>Média de Produção por Máquina</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -42,7 +42,7 @@
     </style>
 </head>
 <body>
-    <h1>Produção por Máquina por Turno</h1>
+    <h1>Média de Produção por Máquina por Turno</h1>
     <input type="file" id="upload" accept=".xlsx" />
     <canvas id="myChart"></canvas>
 
@@ -67,6 +67,7 @@
 
         function processData(data) {
             const machineData = {};
+            const countData = {}; // Para contar as ocorrências
 
             // Ignora o cabeçalho
             for (let i = 1; i < data.length; i++) {
@@ -76,14 +77,17 @@
 
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
+                    countData[machine] = { "Turno 1": 0, "Turno 2": 0 }; // Inicializa contagem
                 }
+
                 machineData[machine][turno] += quantity; // Acumula a produção por turno
+                countData[machine][turno] += 1; // Conta as ocorrências
             }
 
             // Prepara os dados para o gráfico
             const labels = Object.keys(machineData);
-            const turno1Data = labels.map(machine => machineData[machine]["Turno 1"] || 0);
-            const turno2Data = labels.map(machine => machineData[machine]["Turno 2"] || 0);
+            const turno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
+            const turno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
 
             createChart(labels, turno1Data, turno2Data);
         }
@@ -96,14 +100,14 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Produção Turno 1',
+                            label: 'Média de Produção Turno 1',
                             data: turno1Data,
                             backgroundColor: 'rgba(255, 99, 132, 0.8)',
                             borderColor: 'rgba(255, 99, 132, 1)',
                             borderWidth: 1,
                         },
                         {
-                            label: 'Produção Turno 2',
+                            label: 'Média de Produção Turno 2',
                             data: turno2Data,
                             backgroundColor: 'rgba(54, 162, 235, 0.8)',
                             borderColor: 'rgba(54, 162, 235, 1)',
@@ -119,7 +123,7 @@
                         },
                         title: {
                             display: true,
-                            text: 'Produção por Máquina por Turno',
+                            text: 'Média de Produção por Máquina por Turno',
                         }
                     },
                     scales: {
@@ -127,7 +131,7 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Produção por Minuto'
+                                text: 'Produção Média por Minuto'
                             }
                         },
                         x: {
