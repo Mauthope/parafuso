@@ -73,43 +73,44 @@
                 }
             }
 
-            function processData(data) {
-                const results = {};
+function processData(data) {
+    const results = {};
 
-                data.slice(1).forEach(row => {
-                    const turno = row[0]?.toString();
-                    const tipo = row[1]?.toString();
-                    const valor = parseFloat(row[2]);
+    data.slice(1).forEach(row => {
+        const turno = row[0]?.toString();
+        const tipo = row[1]?.toString();
+        const valor = parseFloat(row[2]);
 
-                    // Ignorar valores não numéricos, nulos ou menores que ou iguais a zero
-                    if (!isNaN(valor) && valor > 0 && turno && tipo) {
-                        if (!results[tipo]) {
-                            results[tipo] = { '1': [], '2': [] };
-                        }
-                        if (results[tipo][turno]) {
-                            results[tipo][turno].push(valor);
-                        }
-                    }
-                });
-
-                const processedData = {};
-                for (const tipo in results) {
-                    processedData[tipo] = {};
-                    for (const turno in results[tipo]) {
-                        const valores = results[tipo][turno].filter(v => v > 0); // Filtra valores válidos
-                        if (valores.length > 0) {
-                            const soma = valores.reduce((acc, curr) => acc + curr, 0);
-                            const media = soma / valores.length;
-                            processedData[tipo][turno] = media;
-                        } else {
-                            processedData[tipo][turno] = 0; // Define como zero se não houver valores válidos
-                        }
-                    }
-                }
-
-                console.log('Processed Data:', processedData); // Debug: Verificar os dados processados
-                return processedData;
+        // Ignorar valores não numéricos, nulos ou menores que ou iguais a zero
+        if (!isNaN(valor) && valor > 0 && turno && tipo) {
+            if (!results[tipo]) {
+                results[tipo] = { '1': [], '2': [] };
             }
+            if (results[tipo][turno]) {
+                results[tipo][turno].push(valor);
+            }
+        }
+    });
+
+    const processedData = {};
+    for (const tipo in results) {
+        processedData[tipo] = {};
+        for (const turno in results[tipo]) {
+            const valores = results[tipo][turno].filter(v => v > 0); // Filtra valores válidos
+            if (valores.length > 0) {
+                const soma = valores.reduce((acc, curr) => acc + curr, 0);
+                const media = soma / valores.length;
+                processedData[tipo][turno] = media;
+            } else {
+                processedData[tipo][turno] = null; // Deixe como null para diferenciar de zero
+            }
+        }
+    }
+
+    console.log('Processed Data:', processedData); // Verificar os dados processados
+    return processedData;
+}
+
 
             function generateChart(data) {
                 const labels = Object.keys(data);
