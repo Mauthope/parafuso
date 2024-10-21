@@ -3,138 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parafuso Animado com Base</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        #container {
-            text-align: center;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        #base {
-            width: 60px;
-            height: 10px; /* Altura da base fixada em 10mm */
-            background-color: #333;
-            margin: 0 auto;
-            position: relative;
-            border-radius: 5px;
-        }
-
-        #parafuso {
-            width: 20px;
-            height: 100px; /* Altura inicial do parafuso em 100mm */
-            background: linear-gradient(to bottom, #999, #555);
-            position: absolute;
-            bottom: 10px; /* Para posicionar sobre a base */
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 3px;
-            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3);
-            transition: height 0.5s, transform 0.5s;
-        }
-
-        #alturaLabel {
-            position: absolute;
-            bottom: 100%; /* Acima do parafuso */
-            left: 50%;
-            transform: translateX(-50%);
-            background: #007BFF;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-size: 12px;
-            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
-            white-space: nowrap;
-        }
-
-        #inputs {
-            margin-top: 20px;
-        }
-
-        input {
-            margin: 5px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            width: 100px;
-            box-sizing: border-box;
-        }
-
-        button {
-            margin: 5px;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <title>Gráfico de Médias</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="container">
-        <div id="base">
-            <div id="parafuso">
-                <div id="alturaLabel">100mm</div>
-            </div>
-        </div>
-        <div id="inputs">
-            <label for="altura">Movimento (mm): </label>
-            <input type="number" id="altura" placeholder="Digite o valor em mm">
-            <button onclick="apertarParafuso()">Apertar</button>
-            <button onclick="afrouxarParafuso()">Afrouxar</button>
-        </div>
-    </div>
-
-    <script>
-        const parafuso = document.getElementById('parafuso');
-        const alturaLabel = document.getElementById('alturaLabel');
-
-        let alturaAtual = 100; // Altura inicial do parafuso em mm
-
-        function apertarParafuso() {
-            const movimento = parseFloat(document.getElementById('altura').value);
-            if (movimento && alturaAtual - movimento >= 0) {
-                alturaAtual -= movimento;
-                atualizarParafuso();
-            } else {
-                alert('Valor inválido ou movimento muito grande.');
-            }
-        }
-
-        function afrouxarParafuso() {
-            const movimento = parseFloat(document.getElementById('altura').value);
-            if (movimento && alturaAtual + movimento <= 100) {
-                alturaAtual += movimento;
-                atualizarParafuso();
-            } else {
-                alert('Valor inválido ou movimento muito grande.');
-            }
-        }
-
-        function atualizarParafuso() {
-            const novaAlturaPx = (alturaAtual / 100) * 100; // Converter mm para altura do parafuso (100px = 100mm)
-            parafuso.style.height = `${novaAlturaPx}px`;
-            alturaLabel.textContent = `${alturaAtual.toFixed(2)}mm`;
-            alturaLabel.style.bottom = `${novaAlturaPx + 5}px`; // Ajusta a posição do rótulo conforme a altura do parafuso
-        }
-    </script>
+    <h1>Gráfico de Médias por Tipo e Turno</h1>
+    <canvas id="myChart" width="400" height="200"></canvas>
+    <script src="script.js"></script>
 </body>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    // Nome do arquivo Excel
+    const fileName = 'acab.xlsx';
+
+    // Função para carregar e processar os dados do Excel
+    async function loadAndProcessExcel() {
+        try {
+            // Lê o arquivo Excel localmente usando fetch e array buffer
+            const response = await fetch(fileName);
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+
+            // Converte a planilha em um array de objetos
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            // Processa os dados para obter as médias por tipo e turno
+            const data = processData(jsonData);
+
+            // Gera o gráfico com os dados processados
+            generateChart(data);
+        } catch (error) {
+            console.error('Erro ao carregar o arquivo Excel:', error);
+        }
+    }
+
+    // Função para processar os dados da planilha
+    function processData(data) {
+        const results = {};
+
+        data.slice(1).forEach(row => {
+            const turno = row[0];  // Turno (coluna 1)
+            const tipo = row[1];   // Tipo (coluna 2)
+            const valor = parseFloat(row[2]);  // Valor (coluna 3)
+
+            if (!isNaN(valor)) {
+                // Organiza os dados por turno e tipo
+                if (!results[tipo]) {
+                    results[tipo] = {};
+                }
+                if (!results[tipo][turno]) {
+                    results[tipo][turno] = [];
+                }
+                results[tipo][turno].push(valor);
+            }
+        });
+
+        // Calcula as médias
+        const processedData = {};
+        for (const tipo in results) {
+            processedData[tipo] = {};
+
+            for (const turno in results[tipo]) {
+                const valores = results[tipo][turno];
+                const media = valores.reduce((acc, curr) => acc + curr, 0) / valores.length;
+                processedData[tipo][turno] = media;
+            }
+        }
+
+        return processedData;
+    }
+
+    // Função para gerar o gráfico com os dados processados
+    function generateChart(data) {
+        const labels = Object.keys(data);
+        const datasets = [];
+
+        // Separando os turnos e criando datasets para cada um
+        const turnos = ['1', '2'];  // Considerando que são apenas turno 1 e turno 2
+
+        turnos.forEach(turno => {
+            const dataForTurno = labels.map(tipo => data[tipo][turno] || 0);
+            datasets.push({
+                label: `Turno ${turno}`,
+                data: dataForTurno,
+                backgroundColor: turno === '1' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
+                borderColor: turno === '1' ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            });
+        });
+
+        // Configura o gráfico
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Média de Valores por Tipo e Turno'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Média'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tipo'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chama a função para carregar e processar a planilha
+    loadAndProcessExcel();
+});
+
+    </script>
 </html>
