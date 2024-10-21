@@ -3,132 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico de Médias</title>
+    <title>Produção por Máquina</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            text-align: center;
-        }
         canvas {
             max-width: 600px;
             margin: auto;
         }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
-    <h1>Gráfico de Médias</h1>
-    <canvas id="myChart" width="400" height="200"></canvas>
-    
-    <script>
-        // Função para carregar a planilha e processar os dados
-        function processSpreadsheet() {
-            const url = 'acab.xlsx'; // Nome do arquivo da planilha
-            const req = new XMLHttpRequest();
-            req.open('GET', url, true);
-            req.responseType = 'arraybuffer';
+    <h1>Produção por Máquina por Turno</h1>
+    <input type="file" id="upload" accept=".xlsx" />
+    <canvas id="myChart"></canvas>
 
-            req.onload = function (e) {
-                const data = new Uint8Array(req.response);
+    <script>
+        document.getElementById('upload').addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-
-                // Converte a planilha para JSON
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                generateChart(jsonData);
+
+                processData(jsonData);
             };
 
-            req.onerror = function (e) {
-                console.error("Erro ao carregar a planilha", e);
-            };
-
-            req.send();
+            reader.readAsArrayBuffer(file);
         }
 
-        // Função para gerar o gráfico
-        function generateChart(data) {
-            const turnos = {};
-            
-            // Percorre os dados e agrupa por turno e tipo
-            data.forEach((row, index) => {
-                if (index === 0) return; // Ignora cabeçalho
+        function processData(data) {
+            const machineData = {};
 
-                const turno = row[0]; // Coluna 1
-                const tipo = row[1]; // Coluna 2
-                const valor = row[2]; // Coluna 3
+            // Ignora o cabeçalho
+            for (let i = 1; i < data.length; i++) {
+                const turno = data[i][0]; // Coluna 1: "Turno 1", "Turno 2"
+                const machine = data[i][1]; // Coluna 2: Nome da máquina
+                const quantity = data[i][2]; // Coluna 3: Quantidade por minuto
 
-                // Verifica se o valor da coluna 1 começa com "Turno"
-                if (typeof valor !== 'number' || !turno.startsWith("Turno")) return; 
-
-                if (!turnos[turno]) {
-                    turnos[turno] = {};
+                if (!machineData[machine]) {
+                    machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
                 }
-                if (!turnos[turno][tipo]) {
-                    turnos[turno][tipo] = { sum: 0, count: 0 };
-                }
-
-                turnos[turno][tipo].sum += valor;
-                turnos[turno][tipo].count += 1;
-            });
-
-            // Calcula as médias
-            const labels = [];
-            const datasets = [];
-            
-            for (const turno in turnos) {
-                labels.push(turno);
-
-                for (const tipo in turnos[turno]) {
-                    const media = turnos[turno][tipo].sum / turnos[turno][tipo].count;
-                    if (!datasets[tipo]) {
-                        datasets[tipo] = { label: tipo, data: [], backgroundColor: randomColor() };
-                    }
-                    datasets[tipo].data.push(media);
-                }
+                machineData[machine][turno] += quantity; // Acumula a produção por turno
             }
 
-            // Cria os dados para o gráfico
-            const chartData = {
-                labels: labels,
-                datasets: datasets.map(dataset => ({
-                    label: dataset.label,
-                    data: dataset.data,
-                    backgroundColor: dataset.backgroundColor,
-                })),
-            };
+            // Prepara os dados para o gráfico
+            const labels = Object.keys(machineData);
+            const turno1Data = labels.map(machine => machineData[machine]["Turno 1"] || 0);
+            const turno2Data = labels.map(machine => machineData[machine]["Turno 2"] || 0);
 
-            // Cria o gráfico
+            createChart(labels, turno1Data, turno2Data);
+        }
+
+        function createChart(labels, turno1Data, turno2Data) {
             const ctx = document.getElementById('myChart').getContext('2d');
-            new Chart(ctx, {
+            const myChart = new Chart(ctx, {
                 type: 'bar',
-                data: chartData,
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Produção Turno 1',
+                            data: turno1Data,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        },
+                        {
+                            label: 'Produção Turno 2',
+                            data: turno2Data,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        }
+                    ]
+                },
                 options: {
-                    responsive: true,
                     scales: {
                         y: {
-                            beginAtZero: true,
-                        },
-                    },
-                },
+                            beginAtZero: true
+                        }
+                    }
+                }
             });
         }
-
-        // Função para gerar uma cor aleatória
-        function randomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-
-        // Inicia o processamento ao carregar a página
-        window.onload = processSpreadsheet;
     </script>
 </body>
 </html>
