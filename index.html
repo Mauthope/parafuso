@@ -33,20 +33,24 @@
         .checkbox-group label {
             margin-right: 15px;
         }
-        button {
+        button, input {
             padding: 10px 20px;
             font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
             cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
+            margin: 5px;
+        }
+        input[type="date"] {
+            width: auto;
         }
     </style>
 </head>
 <body>
     <h1>Média de Produção por Máquina por Turno</h1>
     <div class="checkbox-group" id="checkboxGroup"></div>
+    <input type="date" id="startDate" placeholder="Data inicial">
+    <input type="date" id="endDate" placeholder="Data final">
     <button id="updateChart">Atualizar Gráfico</button>
     <canvas id="myChart"></canvas>
 
@@ -55,6 +59,7 @@
         let labels = [];
         let allTurno1Data = [];
         let allTurno2Data = [];
+        let dateData = [];
         let myChart;
 
         window.onload = function() {
@@ -87,6 +92,7 @@
                 const turno = data[i][0]; // Coluna 1: "Turno 1", "Turno 2"
                 const machine = data[i][1]; // Coluna 2: Nome da máquina
                 const quantity = data[i][8]; // Coluna 3: Quantidade por minuto
+                const date = data[i][7]; // Coluna 8: Data
 
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
@@ -95,6 +101,11 @@
 
                 machineData[machine][turno] += quantity; // Acumula a produção por turno
                 countData[machine][turno] += 1; // Conta as ocorrências
+
+                if (!dateData[machine]) {
+                    dateData[machine] = [];
+                }
+                dateData[machine].push(date);
             }
 
             // Prepara os dados para o gráfico
@@ -123,11 +134,28 @@
 
         document.getElementById('updateChart').addEventListener('click', () => {
             const selectedMachines = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked')).map(input => input.value);
-            const filteredTurno1Data = selectedMachines.map(machine => allTurno1Data[labels.indexOf(machine)]);
-            const filteredTurno2Data = selectedMachines.map(machine => allTurno2Data[labels.indexOf(machine)]);
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const filteredTurno1Data = selectedMachines.map(machine => {
+                return filterDataByDate(machineData[machine]["Turno 1"], dateData[machine], startDate, endDate);
+            });
+
+            const filteredTurno2Data = selectedMachines.map(machine => {
+                return filterDataByDate(machineData[machine]["Turno 2"], dateData[machine], startDate, endDate);
+            });
 
             createChart(selectedMachines, filteredTurno1Data, filteredTurno2Data);
         });
+
+        function filterDataByDate(data, dates, startDate, endDate) {
+            return dates.filter((date, index) => {
+                const currentDate = new Date(date);
+                const isAfterStartDate = startDate ? currentDate >= new Date(startDate) : true;
+                const isBeforeEndDate = endDate ? currentDate <= new Date(endDate) : true;
+                return isAfterStartDate && isBeforeEndDate;
+            }).map((date, index) => data[index]);
+        }
 
         function createChart(selectedLabels, turno1Data, turno2Data) {
             if (myChart) {
@@ -159,17 +187,29 @@
                     responsive: true,
                     plugins: {
                         legend: {
-                            display: true, // Remove a legenda
+                            display: true,
                         },
                         title: {
                             display: true,
                             text: 'Média de Produção por Máquina por Turno',
                         },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'end',
-                            formatter: (value) => value.toFixed(2), // Formata os valores
-                            color: 'black', // Cor dos rótulos em preto
+                        annotation: {
+                            annotations: {
+                                line75: {
+                                    type: 'line',
+                                    yMin: 75,
+                                    yMax: 75,
+                                    borderColor: 'rgba(0, 128, 0, 0.8)',
+                                    borderWidth: 2,
+                                    label: {
+                                        enabled: true,
+                                        content: 'Meta: 75',
+                                        position: 'end',
+                                        backgroundColor: 'rgba(0, 128, 0, 0.5)',
+                                        color: 'black'
+                                    }
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -187,12 +227,9 @@
                             }
                         }
                     }
-                },
-         plugins: [ChartDataLabels] // Plugin para rótulos de dados
+                }
             });
         }
     </script>
-   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script> <!-- Plugin para rótulos de dados -->
-</body>
 </body>
 </html>
