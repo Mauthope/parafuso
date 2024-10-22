@@ -39,6 +39,14 @@
         input[type="date"] {
             width: auto;
         }
+        .checkbox-container {
+            text-align: left;
+            margin: 10px auto;
+            max-width: 800px;
+        }
+        .checkbox-container label {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -46,6 +54,7 @@
     <input type="date" id="startDate" placeholder="Data inicial">
     <input type="date" id="endDate" placeholder="Data final">
     <button id="updateChart">Atualizar Gráfico</button>
+    <div class="checkbox-container" id="machineCheckboxes"></div>
     <canvas id="myChart"></canvas>
 
     <script>
@@ -53,7 +62,7 @@
         let labels = [];
         let allTurno1Data = [];
         let allTurno2Data = [];
-        let dateData = [];
+        let dateData = {};
         let myChart;
 
         window.onload = function() {
@@ -69,6 +78,7 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
+                    createMachineCheckboxes();
                     createChart(labels, allTurno1Data, allTurno2Data);
                 })
                 .catch(error => {
@@ -89,14 +99,11 @@
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
                     countData[machine] = { "Turno 1": 0, "Turno 2": 0 };
+                    dateData[machine] = [];
                 }
 
                 machineData[machine][turno] += quantity;
                 countData[machine][turno] += 1;
-
-                if (!dateData[machine]) {
-                    dateData[machine] = [];
-                }
                 dateData[machine].push(date);
             }
 
@@ -105,17 +112,43 @@
             allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
         }
 
+        function createMachineCheckboxes() {
+            const checkboxContainer = document.getElementById('machineCheckboxes');
+            labels.forEach(machine => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = machine;
+                checkbox.checked = true; // Inicia todos os checkboxes selecionados
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(machine));
+                checkboxContainer.appendChild(label);
+            });
+        }
+
         document.getElementById('updateChart').addEventListener('click', () => {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
-            const filteredLabels = labels.filter((machine, index) => {
-                const dates = dateData[machine];
-                return dates.some(date => {
-                    const currentDate = new Date(date);
-                    const isAfterStartDate = startDate ? currentDate >= new Date(startDate) : true;
-                    const isBeforeEndDate = endDate ? currentDate <= new Date(endDate) : true;
-                    return isAfterStartDate && isBeforeEndDate;
+            // Convertendo datas para comparação
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+
+            const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
+
+            const filteredLabels = labels.filter(machine => {
+                if (!selectedMachines.includes(machine)) {
+                    return false;
+                }
+
+                // Filtragem por datas
+                const machineDates = dateData[machine];
+                return machineDates.some(dateString => {
+                    const [day, month, year] = dateString.split('/').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    const isAfterStart = start ? date >= start : true;
+                    const isBeforeEnd = end ? date <= end : true;
+                    return isAfterStart && isBeforeEnd;
                 });
             });
 
