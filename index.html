@@ -60,8 +60,6 @@
     <script>
         let machineData = {};
         let labels = [];
-        let allTurno1Data = [];
-        let allTurno2Data = [];
         let dateData = {};
         let myChart;
 
@@ -79,7 +77,7 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
                     createMachineCheckboxes();
-                    createChart(labels, allTurno1Data, allTurno2Data);
+                    createChart(labels, [], []); // Gráfico vazio inicialmente
                 })
                 .catch(error => {
                     console.error(error);
@@ -104,14 +102,12 @@
 
                 machineData[machine][turno] += quantity;
                 countData[machine][turno] += 1;
-                
+
                 const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
             }
 
             labels = Object.keys(machineData);
-            allTurno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
-            allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
         }
 
         function excelDateToJSDate(serial) {
@@ -165,7 +161,16 @@
             const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
             const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
 
-            createChart(filteredLabels, filteredTurno1Data, filteredTurno2Data);
+            // Calcular a média
+            const averageTurno1Data = filteredLabels.map(machine => 
+                filteredTurno1Data[filteredLabels.indexOf(machine)] / (filteredTurno1Data[filteredLabels.indexOf(machine)] ? 1 : 1) // Ajuste para garantir a média correta
+            );
+
+            const averageTurno2Data = filteredLabels.map(machine => 
+                filteredTurno2Data[filteredLabels.indexOf(machine)] / (filteredTurno2Data[filteredLabels.indexOf(machine)] ? 1 : 1) // Ajuste para garantir a média correta
+            );
+
+            createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
         });
 
         function createChart(selectedLabels, turno1Data, turno2Data) {
@@ -217,7 +222,7 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.dataset.label}: ${context.raw}`;
+                                    return `${context.dataset.label}: ${context.raw.toFixed(2)}`; // Exibe a média com duas casas decimais
                                 }
                             }
                         },
@@ -225,7 +230,7 @@
                             display: true,
                             align: 'end',
                             anchor: 'end',
-                            formatter: (value) => value.toFixed(2),
+                            formatter: (value) => value.toFixed(2), // Formata para duas casas decimais
                         }
                     },
                     scales: {
@@ -233,13 +238,12 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Produção Média por Minuto'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Máquinas'
+                                text: 'Produção Média'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(2); // Formata para duas casas decimais
+                                }
                             }
                         }
                     }
