@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script> <!-- Adicionando o plugin de rótulos -->
     <style>
         body {
             text-align: center;
@@ -77,7 +78,12 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
                     createMachineCheckboxes();
-                    createInitialChart(); // Criar gráfico inicial com todas as informações
+                    
+                    // Calcular médias iniciais
+                    const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
+                    const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
+                    
+                    createChart(labels, initialTurno1Data, initialTurno2Data); // Gráfico com todas as informações
                 })
                 .catch(error => {
                     console.error(error);
@@ -127,24 +133,6 @@
             });
         }
 
-        function createInitialChart() {
-            const allTurno1Data = labels.map(machine => machineData[machine]["Turno 1"]);
-            const allTurno2Data = labels.map(machine => machineData[machine]["Turno 2"]);
-            const allTurno1Count = labels.map(machine => machineData[machine]["Turno 1 Count"]);
-            const allTurno2Count = labels.map(machine => machineData[machine]["Turno 2 Count"]);
-
-            // Calcular a média
-            const averageTurno1Data = allTurno1Data.map((data, index) => 
-                data / allTurno1Count[index]
-            );
-
-            const averageTurno2Data = allTurno2Data.map((data, index) => 
-                data / allTurno2Count[index]
-            );
-
-            createChart(labels, averageTurno1Data, averageTurno2Data); // Cria gráfico com todos os dados
-        }
-
         document.getElementById('updateChart').addEventListener('click', () => {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -180,11 +168,11 @@
 
             // Calcular a média
             const averageTurno1Data = filteredLabels.map((machine, index) => 
-                filteredTurno1Data[index] / filteredTurno1Count[index]
+                filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
             );
 
             const averageTurno2Data = filteredLabels.map((machine, index) => 
-                filteredTurno2Data[index] / filteredTurno2Count[index]
+                filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
             );
 
             createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
@@ -229,48 +217,25 @@
                                     borderColor: 'rgb(75, 192, 192)',
                                     borderWidth: 2,
                                     label: {
-                                        content: 'Meta',
+                                        content: 'Meta: 75',
                                         enabled: true,
-                                        position: 'start'
+                                        position: 'end'
                                     }
                                 }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    return tooltipItem.dataset.label + ': ' + tooltipItem.raw.toFixed(2); // Formata para duas casas decimais
-                                }
-                            }
-                        },
-                        // Adicionando as médias nos gráficos
-                        datalabels: {
+                        datalabels: { // Configurações do plugin de rótulos
+                            color: 'black',
                             anchor: 'end',
                             align: 'end',
-                            color: 'black',
-                            formatter: (value, context) => {
-                                const machineLabel = context.chart.data.labels[context.dataIndex];
-                                const turno1Avg = machineData[machineLabel]["Turno 1"] / machineData[machineLabel]["Turno 1 Count"];
-                                return turno1Avg.toFixed(2); // Exibe média por turno
-                            },
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Produção Média'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toFixed(2); // Formata para duas casas decimais
-                                }
-                            }
+                            beginAtZero: true
                         }
                     }
-                },
-                plugins: [ChartDataLabels] // Habilita a exibição dos rótulos
+                }
             });
         }
     </script>
