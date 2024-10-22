@@ -143,18 +143,24 @@
 
             const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
 
-            const filteredLabels = labels.filter(machine => {
-                if (!selectedMachines.includes(machine)) {
-                    return false;
-                }
+            // Filtragem baseada em data
+            let filteredLabels = labels;
 
-                const machineDates = dateData[machine];
-                return machineDates.some(date => {
-                    const isAfterStart = start ? date >= start : true;
-                    const isBeforeEnd = end ? date <= end : true;
-                    return isAfterStart && isBeforeEnd;
+            if (start || end) {
+                filteredLabels = labels.filter(machine => {
+                    const machineDates = dateData[machine];
+                    return machineDates.some(date => {
+                        const isAfterStart = start ? date >= start : true;
+                        const isBeforeEnd = end ? date <= end : true;
+                        return isAfterStart && isBeforeEnd;
+                    });
                 });
-            });
+            }
+
+            // Filtragem baseada em máquinas
+            if (selectedMachines.length > 0) {
+                filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
+            }
 
             const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
             const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
