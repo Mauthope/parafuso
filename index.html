@@ -224,11 +224,13 @@
                                 }
                             }
                         },
-                        datalabels: { // Configurações do plugin de rótulos
-                            color: 'black',
+                        datalabels: {
                             anchor: 'end',
                             align: 'end',
+                            formatter: (value) => value.toFixed(2), // Formata os valores
+                            color: 'black', // Cor dos rótulos em preto
                         }
+
                     },
                     scales: {
                         y: {
