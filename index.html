@@ -77,7 +77,7 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
                     createMachineCheckboxes();
-                    createChart(labels, [], []); // Gráfico vazio inicialmente
+                    createInitialChart(); // Criar gráfico inicial com todas as informações
                 })
                 .catch(error => {
                     console.error(error);
@@ -127,6 +127,24 @@
             });
         }
 
+        function createInitialChart() {
+            const allTurno1Data = labels.map(machine => machineData[machine]["Turno 1"]);
+            const allTurno2Data = labels.map(machine => machineData[machine]["Turno 2"]);
+            const allTurno1Count = labels.map(machine => machineData[machine]["Turno 1 Count"]);
+            const allTurno2Count = labels.map(machine => machineData[machine]["Turno 2 Count"]);
+
+            // Calcular a média
+            const averageTurno1Data = allTurno1Data.map((data, index) => 
+                data / allTurno1Count[index]
+            );
+
+            const averageTurno2Data = allTurno2Data.map((data, index) => 
+                data / allTurno2Count[index]
+            );
+
+            createChart(labels, averageTurno1Data, averageTurno2Data); // Cria gráfico com todos os dados
+        }
+
         document.getElementById('updateChart').addEventListener('click', () => {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -162,11 +180,11 @@
 
             // Calcular a média
             const averageTurno1Data = filteredLabels.map((machine, index) => 
-                filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
+                filteredTurno1Data[index] / filteredTurno1Count[index]
             );
 
             const averageTurno2Data = filteredLabels.map((machine, index) => 
-                filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
+                filteredTurno2Data[index] / filteredTurno2Count[index]
             );
 
             createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
@@ -211,19 +229,30 @@
                                     borderColor: 'rgb(75, 192, 192)',
                                     borderWidth: 2,
                                     label: {
-                                        content: 'Meta: 75',
+                                        content: 'Meta',
                                         enabled: true,
-                                        position: 'end',
+                                        position: 'start'
                                     }
                                 }
                             }
                         },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.raw.toFixed(2)}`; // Exibe a média com duas casas decimais
+                                label: function(tooltipItem) {
+                                    return tooltipItem.dataset.label + ': ' + tooltipItem.raw.toFixed(2); // Formata para duas casas decimais
                                 }
                             }
+                        },
+                        // Adicionando as médias nos gráficos
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            color: 'black',
+                            formatter: (value, context) => {
+                                const machineLabel = context.chart.data.labels[context.dataIndex];
+                                const turno1Avg = machineData[machineLabel]["Turno 1"] / machineData[machineLabel]["Turno 1 Count"];
+                                return turno1Avg.toFixed(2); // Exibe média por turno
+                            },
                         }
                     },
                     scales: {
@@ -240,7 +269,8 @@
                             }
                         }
                     }
-                }
+                },
+                plugins: [ChartDataLabels] // Habilita a exibição dos rótulos
             });
         }
     </script>
