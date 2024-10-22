@@ -105,7 +105,6 @@
                 machineData[machine][turno] += quantity;
                 countData[machine][turno] += 1;
                 
-                // Converter número de série de data para objeto Date
                 const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
             }
@@ -116,7 +115,6 @@
         }
 
         function excelDateToJSDate(serial) {
-            // Converte número de série do Excel para data JavaScript
             const utc_days = Math.floor(serial - 25569);
             const date_info = new Date(utc_days * 86400 * 1000);
             return new Date(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate());
@@ -129,7 +127,7 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = machine;
-                checkbox.checked = true;
+                checkbox.checked = false; // Agora os checkboxes vêm desmarcados por padrão
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(machine));
                 checkboxContainer.appendChild(label);
@@ -150,7 +148,6 @@
                     return false;
                 }
 
-                // Filtragem por datas
                 const machineDates = dateData[machine];
                 return machineDates.some(date => {
                     const isAfterStart = start ? date >= start : true;
@@ -194,6 +191,37 @@
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 75,
+                                    yMax: 75,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Meta: 75',
+                                        enabled: true,
+                                        position: 'end',
+                                    }
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: true,
+                            align: 'end',
+                            anchor: 'end',
+                            formatter: (value) => value.toFixed(2),
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
