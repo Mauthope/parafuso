@@ -131,8 +131,8 @@
             const endDate = document.getElementById('endDate').value;
 
             // Convertendo datas para comparação
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
+            const start = startDate ? new Date(startDate.split('-').reverse().join('-')) : null;
+            const end = endDate ? new Date(endDate.split('-').reverse().join('-')) : null;
 
             const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
 
