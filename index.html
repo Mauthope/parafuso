@@ -63,7 +63,7 @@
         let dateData = {};
         let myChart;
 
-       window.onload = function() {
+        window.onload = function() {
             fetch('acab.xlsx')
                 .then(response => {
                     if (!response.ok) {
@@ -76,15 +76,13 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
-                    populateCheckboxes();
-                    createChart(labels, allTurno1Data, allTurno2Data); // Criar o gráfico inicial
+                    createMachineCheckboxes();
                 })
                 .catch(error => {
                     console.error(error);
                     alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
                 });
         };
-
 
         function processData(data) {
             const countData = {};
@@ -101,13 +99,16 @@
                     dateData[machine] = [];
                 }
 
+                // Adiciona as quantidades à máquina e turno correspondentes
                 machineData[machine][turno].push(quantity);
                 countData[machine][turno] += 1;
 
+                // Converte a data do Excel e adiciona ao array de datas da máquina
                 const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
             }
 
+            // Preenche os rótulos das máquinas
             labels = Object.keys(machineData);
         }
 
@@ -124,7 +125,7 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = machine;
-                checkbox.checked = false; // Agora os checkboxes vêm desmarcados por padrão
+                checkbox.checked = false; // Checkboxes desmarcados por padrão
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(machine));
                 checkboxContainer.appendChild(label);
