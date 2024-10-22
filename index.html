@@ -86,7 +86,7 @@
             for (let i = 1; i < data.length; i++) {
                 const turno = data[i][0]; // Coluna 1: "Turno 1", "Turno 2"
                 const machine = data[i][1]; // Coluna 2: Nome da máquina
-                const quantity = data[i][2]; // Coluna 3: Quantidade por minuto
+                const quantity = data[i][8]; // Coluna 3: Quantidade por minuto
 
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
