@@ -63,7 +63,7 @@
         let dateData = {};
         let myChart;
 
-        window.onload = function() {
+       window.onload = function() {
             fetch('acab.xlsx')
                 .then(response => {
                     if (!response.ok) {
@@ -76,13 +76,15 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
-                    createMachineCheckboxes();
+                    populateCheckboxes();
+                    createChart(labels, allTurno1Data, allTurno2Data); // Criar o gráfico inicial
                 })
                 .catch(error => {
                     console.error(error);
                     alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
                 });
         };
+
 
         function processData(data) {
             const countData = {};
