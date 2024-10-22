@@ -219,20 +219,28 @@
                                     label: {
                                         content: 'Meta: 75',
                                         enabled: true,
-                                        position: 'end'
+                                        position: 'start'
                                     }
                                 }
                             }
                         },
-                        datalabels: { // Configurações do plugin de rótulos
-                            color: 'black',
+                        datalabels: { // Configuração do plugin de rótulos
                             anchor: 'end',
                             align: 'end',
+                            formatter: (value, context) => {
+                                return Math.round(value); // Formatar como número inteiro
+                            },
+                            color: '#fff', // Cor do texto do rótulo
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return Math.round(value); // Mostrar apenas números inteiros
+                                }
+                            }
                         }
                     }
                 }
