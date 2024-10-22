@@ -1,249 +1,67 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Média de Produção por Máquina</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
-   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script> <!-- Plugin para rótulos de dados -->
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            padding: 20px;
-        }
-        h1 {
-            margin-bottom: 20px;
-            color: #4a4a4a;
-        }
-        canvas {
-            max-width: 800px;
-            width: 100%;
-            height: 400px;
-            margin: auto;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            background-color: #ffffff;
-        }
-        button, input {
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            margin: 5px;
-        }
-        input[type="date"] {
-            width: auto;
-        }
-        .checkbox-container {
-            text-align: left;
-            margin: 10px auto;
-            max-width: 800px;
-        }
-        .checkbox-container label {
-            margin-right: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Média de Produção por Máquina por Turno</h1>
-    <input type="date" id="startDate" placeholder="Data inicial">
-    <input type="date" id="endDate" placeholder="Data final">
-    <button id="updateChart">Atualizar Gráfico</button>
-    <div class="checkbox-container" id="machineCheckboxes"></div>
-    <canvas id="myChart"></canvas>
+function createChart(selectedLabels, turno1Data, turno2Data) {
+    if (myChart) {
+        myChart.destroy();
+    }
 
-    <script>
-        let machineData = {};
-        let labels = [];
-        let dateData = {};
-        let myChart;
-
-        window.onload = function() {
-            fetch('acab.xlsx')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar o arquivo: ' + response.statusText);
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(data => {
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    processData(jsonData);
-                    createMachineCheckboxes();
-                    
-                    // Calcular médias iniciais
-                    const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
-                    const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
-                    
-                    createChart(labels, initialTurno1Data, initialTurno2Data); // Gráfico com todas as informações
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
-                });
-        };
-
-        function processData(data) {
-            for (let i = 1; i < data.length; i++) {
-                const turno = data[i][0];
-                const machine = data[i][1];
-                const quantity = data[i][8];
-                const dateSerial = data[i][7];
-
-                if (!machineData[machine]) {
-                    machineData[machine] = { "Turno 1": 0, "Turno 2": 0, "Turno 1 Count": 0, "Turno 2 Count": 0 };
-                    dateData[machine] = [];
-                }
-
-                machineData[machine][turno] += quantity;
-                machineData[machine][turno + ' Count'] += 1; // Contar a quantidade de registros por turno
-
-                const date = excelDateToJSDate(dateSerial);
-                dateData[machine].push(date);
-            }
-
-            labels = Object.keys(machineData);
-        }
-
-        function excelDateToJSDate(serial) {
-            const utc_days = Math.floor(serial - 25569);
-            const date_info = new Date(utc_days * 86400 * 1000);
-            return new Date(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate());
-        }
-
-        function createMachineCheckboxes() {
-            const checkboxContainer = document.getElementById('machineCheckboxes');
-            labels.forEach(machine => {
-                const label = document.createElement('label');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = machine;
-                checkbox.checked = false; // Agora os checkboxes vêm desmarcados por padrão
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(machine));
-                checkboxContainer.appendChild(label);
-            });
-        }
-
-        document.getElementById('updateChart').addEventListener('click', () => {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
-
-            const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
-
-            // Filtragem baseada em data
-            let filteredLabels = labels;
-
-            if (start || end) {
-                filteredLabels = labels.filter(machine => {
-                    const machineDates = dateData[machine];
-                    return machineDates.some(date => {
-                        const isAfterStart = start ? date >= start : true;
-                        const isBeforeEnd = end ? date <= end : true;
-                        return isAfterStart && isBeforeEnd;
-                    });
-                });
-            }
-
-            // Filtragem baseada em máquinas
-            if (selectedMachines.length > 0) {
-                filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
-            }
-
-            const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
-            const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
-            const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
-            const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
-
-            // Calcular a média
-            const averageTurno1Data = filteredLabels.map((machine, index) => 
-                filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
-            );
-
-            const averageTurno2Data = filteredLabels.map((machine, index) => 
-                filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
-            );
-
-            createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
-        });
-
-        function createChart(selectedLabels, turno1Data, turno2Data) {
-            if (myChart) {
-                myChart.destroy();
-            }
-
-            const ctx = document.getElementById('myChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: selectedLabels,
-                    datasets: [
-                        {
-                            label: 'Média de Produção Turno 1',
-                            data: turno1Data,
-                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1,
-                        },
-                        {
-                            label: 'Média de Produção Turno 2',
-                            data: turno2Data,
-                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1,
-                        }
-                    ]
+    const ctx = document.getElementById('myChart').getContext('2d');
+    myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: selectedLabels,
+            datasets: [
+                {
+                    label: 'Média de Produção Turno 1',
+                    data: turno1Data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        annotation: {
-                            annotations: {
-                                line1: {
-                                    type: 'line',
-                                    yMin: 75,
-                                    yMax: 75,
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    borderWidth: 2,
-                                    label: {
-                                        content: 'Meta: 75',
-                                        enabled: true,
-                                        position: 'end'
-                                    }
-                                }
+                {
+                    label: 'Média de Produção Turno 2',
+                    data: turno2Data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                annotation: {
+                    annotations: {
+                        line1: {
+                            type: 'line',
+                            yMin: 75,
+                            yMax: 75,
+                            borderColor: 'rgb(75, 192, 192)',
+                            borderWidth: 2,
+                            label: {
+                                content: 'Meta: 75',
+                                enabled: true,
+                                position: 'end'
                             }
-                        },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'end',
-                            formatter: (value) => value.toFixed(2), // Formata os valores
-                            color: 'black', // Cor dos rótulos em preto
-                        }
-
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
                         }
                     }
+                },
+                datalabels: { // Configurações do plugin de rótulos
+                    color: 'black',
+                    anchor: 'end',
+                    align: 'end',
+                    font: {
+                        weight: 'bold', // Deixar o texto em negrito
+                        size: 14, // Aumentar o tamanho da fonte
+                    },
+                    formatter: function(value) {
+                        return Math.round(value); // Arredondar os valores, se necessário
+                    }
                 }
-             
-
-            });
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
         }
-    </script>
-  
-
-</body>
-</html>
+    });
+}
