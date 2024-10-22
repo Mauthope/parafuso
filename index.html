@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script> <!-- Adicionando o plugin de rótulos -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script> <!-- Plugin para rótulos de dados -->
     <style>
         body {
             text-align: center;
@@ -238,6 +238,8 @@
                         }
                     }
                 }
+                },
+         plugins: [ChartDataLabels] // Plugin para rótulos de dados
             });
         }
     </script>
