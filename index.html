@@ -86,8 +86,6 @@
         };
 
         function processData(data) {
-            const countData = {};
-
             for (let i = 1; i < data.length; i++) {
                 const turno = data[i][0];
                 const machine = data[i][1];
@@ -95,13 +93,12 @@
                 const dateSerial = data[i][7];
 
                 if (!machineData[machine]) {
-                    machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
-                    countData[machine] = { "Turno 1": 0, "Turno 2": 0 };
+                    machineData[machine] = { "Turno 1": 0, "Turno 2": 0, "Turno 1 Count": 0, "Turno 2 Count": 0 };
                     dateData[machine] = [];
                 }
 
                 machineData[machine][turno] += quantity;
-                countData[machine][turno] += 1;
+                machineData[machine][turno + ' Count'] += 1; // Contar a quantidade de registros por turno
 
                 const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
@@ -160,14 +157,16 @@
 
             const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
             const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
+            const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
+            const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
 
             // Calcular a média
-            const averageTurno1Data = filteredLabels.map(machine => 
-                filteredTurno1Data[filteredLabels.indexOf(machine)] / (filteredTurno1Data[filteredLabels.indexOf(machine)] ? 1 : 1) // Ajuste para garantir a média correta
+            const averageTurno1Data = filteredLabels.map((machine, index) => 
+                filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
             );
 
-            const averageTurno2Data = filteredLabels.map(machine => 
-                filteredTurno2Data[filteredLabels.indexOf(machine)] / (filteredTurno2Data[filteredLabels.indexOf(machine)] ? 1 : 1) // Ajuste para garantir a média correta
+            const averageTurno2Data = filteredLabels.map((machine, index) => 
+                filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
             );
 
             createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
@@ -225,12 +224,6 @@
                                     return `${context.dataset.label}: ${context.raw.toFixed(2)}`; // Exibe a média com duas casas decimais
                                 }
                             }
-                        },
-                        datalabels: {
-                            display: true,
-                            align: 'end',
-                            anchor: 'end',
-                            formatter: (value) => value.toFixed(2), // Formata para duas casas decimais
                         }
                     },
                     scales: {
