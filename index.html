@@ -6,6 +6,7 @@
     <title>Média de Produção por Máquina</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
     <style>
         body {
             text-align: center;
@@ -27,12 +28,6 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
             background-color: #ffffff; 
         }
-        .checkbox-group {
-            margin: 20px;
-        }
-        .checkbox-group label {
-            margin-right: 15px;
-        }
         button, input {
             padding: 10px 20px;
             font-size: 16px;
@@ -48,7 +43,6 @@
 </head>
 <body>
     <h1>Média de Produção por Máquina por Turno</h1>
-    <div class="checkbox-group" id="checkboxGroup"></div>
     <input type="date" id="startDate" placeholder="Data inicial">
     <input type="date" id="endDate" placeholder="Data final">
     <button id="updateChart">Atualizar Gráfico</button>
@@ -75,8 +69,7 @@
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     processData(jsonData);
-                    populateCheckboxes();
-                    createChart(labels, allTurno1Data, allTurno2Data); // Criar o gráfico inicial
+                    createChart(labels, allTurno1Data, allTurno2Data);
                 })
                 .catch(error => {
                     console.error(error);
@@ -85,22 +78,21 @@
         };
 
         function processData(data) {
-            const countData = {}; // Para contar as ocorrências
+            const countData = {};
 
-            // Ignora o cabeçalho
             for (let i = 1; i < data.length; i++) {
-                const turno = data[i][0]; // Coluna 1: "Turno 1", "Turno 2"
-                const machine = data[i][1]; // Coluna 2: Nome da máquina
-                const quantity = data[i][8]; // Coluna 3: Quantidade por minuto
-                const date = data[i][7]; // Coluna 8: Data
+                const turno = data[i][0];
+                const machine = data[i][1];
+                const quantity = data[i][8];
+                const date = data[i][7];
 
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
-                    countData[machine] = { "Turno 1": 0, "Turno 2": 0 }; // Inicializa contagem
+                    countData[machine] = { "Turno 1": 0, "Turno 2": 0 };
                 }
 
-                machineData[machine][turno] += quantity; // Acumula a produção por turno
-                countData[machine][turno] += 1; // Conta as ocorrências
+                machineData[machine][turno] += quantity;
+                countData[machine][turno] += 1;
 
                 if (!dateData[machine]) {
                     dateData[machine] = [];
@@ -108,59 +100,36 @@
                 dateData[machine].push(date);
             }
 
-            // Prepara os dados para o gráfico
             labels = Object.keys(machineData);
             allTurno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
             allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
         }
 
-        function populateCheckboxes() {
-            const checkboxGroup = document.getElementById('checkboxGroup');
-            labels.forEach(machine => {
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = machine;
-                checkbox.id = machine;
-                checkbox.checked = false; // Marcar como desmarcado por padrão
-
-                const label = document.createElement('label');
-                label.htmlFor = machine;
-                label.textContent = machine;
-
-                checkboxGroup.appendChild(checkbox);
-                checkboxGroup.appendChild(label);
-            });
-        }
-
         document.getElementById('updateChart').addEventListener('click', () => {
-            const selectedMachines = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked')).map(input => input.value);
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
-            const filteredTurno1Data = selectedMachines.map(machine => {
-                return filterDataByDate(machineData[machine]["Turno 1"], dateData[machine], startDate, endDate);
+            const filteredLabels = labels.filter((machine, index) => {
+                const dates = dateData[machine];
+                return dates.some(date => {
+                    const currentDate = new Date(date);
+                    const isAfterStartDate = startDate ? currentDate >= new Date(startDate) : true;
+                    const isBeforeEndDate = endDate ? currentDate <= new Date(endDate) : true;
+                    return isAfterStartDate && isBeforeEndDate;
+                });
             });
 
-            const filteredTurno2Data = selectedMachines.map(machine => {
-                return filterDataByDate(machineData[machine]["Turno 2"], dateData[machine], startDate, endDate);
-            });
+            const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
+            const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
 
-            createChart(selectedMachines, filteredTurno1Data, filteredTurno2Data);
+            createChart(filteredLabels, filteredTurno1Data, filteredTurno2Data);
         });
-
-        function filterDataByDate(data, dates, startDate, endDate) {
-            return dates.filter((date, index) => {
-                const currentDate = new Date(date);
-                const isAfterStartDate = startDate ? currentDate >= new Date(startDate) : true;
-                const isBeforeEndDate = endDate ? currentDate <= new Date(endDate) : true;
-                return isAfterStartDate && isBeforeEndDate;
-            }).map((date, index) => data[index]);
-        }
 
         function createChart(selectedLabels, turno1Data, turno2Data) {
             if (myChart) {
-                myChart.destroy(); // Destrói o gráfico existente se houver
+                myChart.destroy();
             }
+
             const ctx = document.getElementById('myChart').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'bar',
@@ -186,13 +155,6 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            display: true,
-                        },
-                        title: {
-                            display: true,
-                            text: 'Média de Produção por Máquina por Turno',
-                        },
                         annotation: {
                             annotations: {
                                 line75: {
