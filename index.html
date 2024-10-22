@@ -208,24 +208,31 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'top',
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 75,
+                                    yMax: 75,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Meta: 75',
+                                        enabled: true,
+                                        position: 'end'
+                                    }
+                                }
+                            }
                         },
-                        datalabels: {
+                        datalabels: { // Configurações do plugin de rótulos
+                            color: 'black',
                             anchor: 'end',
                             align: 'end',
-                            formatter: (value) => {
-                                return value ? value.toFixed(2) : '0'; // Formatação do valor com duas casas decimais
-                            },
-                        },
+                        }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Produção Média'
-                            }
+                            beginAtZero: true
                         }
                     }
                 }
