@@ -20,13 +20,13 @@
             color: #4a4a4a;
         }
         canvas {
-            max-width: 800px;  
-            width: 100%;       
-            height: 400px;     
+            max-width: 800px;
+            width: 100%;
+            height: 400px;
             margin: auto;
-            border-radius: 10px; 
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
-            background-color: #ffffff; 
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
         }
         button, input {
             padding: 10px 20px;
@@ -94,7 +94,7 @@
                 const turno = data[i][0];
                 const machine = data[i][1];
                 const quantity = data[i][8];
-                const date = data[i][7];
+                const dateSerial = data[i][7];
 
                 if (!machineData[machine]) {
                     machineData[machine] = { "Turno 1": 0, "Turno 2": 0 };
@@ -104,12 +104,22 @@
 
                 machineData[machine][turno] += quantity;
                 countData[machine][turno] += 1;
+                
+                // Converter número de série de data para objeto Date
+                const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
             }
 
             labels = Object.keys(machineData);
             allTurno1Data = labels.map(machine => (machineData[machine]["Turno 1"] / countData[machine]["Turno 1"]) || 0);
             allTurno2Data = labels.map(machine => (machineData[machine]["Turno 2"] / countData[machine]["Turno 2"]) || 0);
+        }
+
+        function excelDateToJSDate(serial) {
+            // Converte número de série do Excel para data JavaScript
+            const utc_days = Math.floor(serial - 25569);
+            const date_info = new Date(utc_days * 86400 * 1000);
+            return new Date(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate());
         }
 
         function createMachineCheckboxes() {
@@ -119,7 +129,7 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = machine;
-                checkbox.checked = true; // Inicia todos os checkboxes selecionados
+                checkbox.checked = true;
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(machine));
                 checkboxContainer.appendChild(label);
@@ -130,9 +140,8 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
-            // Convertendo datas para comparação
-            const start = startDate ? new Date(startDate.split('-').reverse().join('-')) : null;
-            const end = endDate ? new Date(endDate.split('-').reverse().join('-')) : null;
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
 
             const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
 
@@ -143,9 +152,7 @@
 
                 // Filtragem por datas
                 const machineDates = dateData[machine];
-                return machineDates.some(dateString => {
-                    const [day, month, year] = dateString.split('/').map(Number);
-                    const date = new Date(year, month - 1, day);
+                return machineDates.some(date => {
                     const isAfterStart = start ? date >= start : true;
                     const isBeforeEnd = end ? date <= end : true;
                     return isAfterStart && isBeforeEnd;
@@ -187,26 +194,6 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        annotation: {
-                            annotations: {
-                                line75: {
-                                    type: 'line',
-                                    yMin: 75,
-                                    yMax: 75,
-                                    borderColor: 'rgba(0, 128, 0, 0.8)',
-                                    borderWidth: 2,
-                                    label: {
-                                        enabled: true,
-                                        content: 'Meta: 75',
-                                        position: 'end',
-                                        backgroundColor: 'rgba(0, 128, 0, 0.5)',
-                                        color: 'black'
-                                    }
-                                }
-                            }
-                        }
-                    },
                     scales: {
                         y: {
                             beginAtZero: true,
