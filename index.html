@@ -205,37 +205,41 @@
                         }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        annotation: {
-                            annotations: {
-                                line1: {
-                                    type: 'line',
-                                    yMin: 75,
-                                    yMax: 75,
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    borderWidth: 2,
-                                    label: {
-                                        content: 'Meta: 75',
-                                        enabled: true,
-                                        position: 'end'
-                                    }
-                                }
-                            }
-                        },
-                        datalabels: { // Configurações do plugin de rótulos
-                            color: 'black',
-                            anchor: 'end',
-                            align: 'end',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+
+options: {
+    responsive: true,
+    plugins: {
+        annotation: {
+            annotations: {
+                line1: {
+                    type: 'line',
+                    yMin: 75,
+                    yMax: 75,
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 2,
+                    label: {
+                        content: 'Meta: 75',
+                        enabled: true,
+                        position: 'end'
                     }
                 }
+            }
+        },
+        datalabels: { // Configurações do plugin de rótulos
+            color: 'black',
+            anchor: 'end',
+            align: 'top',
+            formatter: function(value) {
+                return value.toFixed(2); // Formata o valor para duas casas decimais
+            }
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true
+        }
+    }
+}
             });
         }
     </script>
