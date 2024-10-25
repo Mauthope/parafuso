@@ -64,32 +64,34 @@
         let dateData = {};
         let myChart;
 
-        window.onload = function() {
-            fetch('acab.xlsx')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erro ao carregar o arquivo: ' + response.statusText);
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(data => {
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    processData(jsonData);
-                    createMachineCheckboxes();
-                    
-                    // Calcular médias iniciais
-                    const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
-                    const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
-                    
-                    createChart(labels, initialTurno1Data, initialTurno2Data); // Gráfico com todas as informações
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
-                });
-        };
+       window.onload = function() {
+    const timestamp = new Date().getTime();
+    fetch(`acab.xlsx?t=${timestamp}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao carregar o arquivo: ' + response.statusText);
+            }
+            return response.arrayBuffer();
+        })
+        .then(data => {
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            processData(jsonData);
+            createMachineCheckboxes();
+            
+            // Calcular médias iniciais
+            const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
+            const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
+            
+            createChart(labels, initialTurno1Data, initialTurno2Data); // Gráfico com todas as informações
+        })
+        .catch(error => {
+            console.error(error);
+            alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
+        });
+};
+
 
         function processData(data) {
             for (let i = 1; i < data.length; i++) {
