@@ -135,43 +135,51 @@
             });
         }
 
-        document.getElementById('updateChart').addEventListener('click', () => {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+       document.getElementById('updateChart').addEventListener('click', () => {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
 
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
 
-            const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
+    const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
 
-            // Filtragem baseada em data
-            let filteredLabels = labels;
+    // Filtragem baseada em data
+    let filteredLabels = labels;
 
-            if (start || end) {
-                filteredLabels = labels.filter(machine => {
-                    const machineDates = dateData[machine];
-                    return machineDates.some(date => {
-                        const isAfterStart = start ? date >= start : true;
-                        const isBeforeEnd = end ? date <= end : true;
-                        return isAfterStart && isBeforeEnd;
-                    });
-                });
-            }
+    if (start || end) {
+        filteredLabels = labels.filter(machine => {
+            const machineDates = dateData[machine];
+            return machineDates.some(date => {
+                const isAfterStart = start ? date >= start : true;
+                const isBeforeEnd = end ? date <= end : true;
+                return isAfterStart && isBeforeEnd;
+            });
+        });
+    }
 
-            // Filtragem baseada em máquinas
-            if (selectedMachines.length > 0) {
-                filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
-            }
+    // Filtragem baseada em máquinas
+    if (selectedMachines.length > 0) {
+        filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
+    }
 
-            const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
-            const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
-            const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
-            const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
+    const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
+    const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
+    const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
+    const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
 
-            // Calcular a média
-            const averageTurno1Data = filteredLabels.map((machine, index) => 
-                filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
-            );
+    // Calcular a média
+    const averageTurno1Data = filteredLabels.map((machine, index) => 
+        filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
+    );
+
+    const averageTurno2Data = filteredLabels.map((machine, index) => 
+        filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
+    );
+
+    createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
+});
+
 
             const averageTurno2Data = filteredLabels.map((machine, index) => 
                 filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
