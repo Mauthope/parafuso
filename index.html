@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script> <!-- Adicionando o plugin de rótulos -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         body {
             text-align: center;
@@ -64,34 +64,32 @@
         let dateData = {};
         let myChart;
 
-       window.onload = function() {
-    const timestamp = new Date().getTime();
-    fetch(`acab.xlsx?t=${timestamp}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro ao carregar o arquivo: ' + response.statusText);
-            }
-            return response.arrayBuffer();
-        })
-        .then(data => {
-            const workbook = XLSX.read(data, { type: 'array' });
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            processData(jsonData);
-            createMachineCheckboxes();
-            
-            // Calcular médias iniciais
-            const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
-            const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
-            
-            createChart(labels, initialTurno1Data, initialTurno2Data); // Gráfico com todas as informações
-        })
-        .catch(error => {
-            console.error(error);
-            alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
-        });
-};
-
+        window.onload = function() {
+            const timestamp = new Date().getTime();
+            fetch(`acab.xlsx?t=${timestamp}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar o arquivo: ' + response.statusText);
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    processData(jsonData);
+                    createMachineCheckboxes();
+                    
+                    const initialTurno1Data = labels.map(machine => machineData[machine]["Turno 1"] / machineData[machine]["Turno 1 Count"]);
+                    const initialTurno2Data = labels.map(machine => machineData[machine]["Turno 2"] / machineData[machine]["Turno 2 Count"]);
+                    
+                    createChart(labels, initialTurno1Data, initialTurno2Data);
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('Não foi possível carregar o arquivo. Verifique se ele está na mesma pasta que o index.html.');
+                });
+        };
 
         function processData(data) {
             for (let i = 1; i < data.length; i++) {
@@ -106,7 +104,7 @@
                 }
 
                 machineData[machine][turno] += quantity;
-                machineData[machine][turno + ' Count'] += 1; // Contar a quantidade de registros por turno
+                machineData[machine][turno + ' Count'] += 1;
 
                 const date = excelDateToJSDate(dateSerial);
                 dateData[machine].push(date);
@@ -128,131 +126,119 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = machine;
-                checkbox.checked = false; // Agora os checkboxes vêm desmarcados por padrão
+                checkbox.checked = false;
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(machine));
                 checkboxContainer.appendChild(label);
             });
         }
 
-       document.getElementById('updateChart').addEventListener('click', () => {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+        document.getElementById('updateChart').addEventListener('click', () => {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
 
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
 
-    const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
+            const selectedMachines = Array.from(document.querySelectorAll('#machineCheckboxes input:checked')).map(checkbox => checkbox.value);
 
-    // Filtragem baseada em data
-    let filteredLabels = labels;
+            let filteredLabels = labels;
 
-    if (start || end) {
-        filteredLabels = labels.filter(machine => {
-            const machineDates = dateData[machine];
-            return machineDates.some(date => {
-                const isAfterStart = start ? date >= start : true;
-                const isBeforeEnd = end ? date <= end : true;
-                return isAfterStart && isBeforeEnd;
-            });
-        });
-    }
+            if (start || end) {
+                filteredLabels = labels.filter(machine => {
+                    const machineDates = dateData[machine];
+                    return machineDates.some(date => {
+                        const isAfterStart = start ? date >= start : true;
+                        const isBeforeEnd = end ? date <= end : true;
+                        return isAfterStart && isBeforeEnd;
+                    });
+                });
+            }
 
-    // Filtragem baseada em máquinas
-    if (selectedMachines.length > 0) {
-        filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
-    }
+            if (selectedMachines.length > 0) {
+                filteredLabels = filteredLabels.filter(machine => selectedMachines.includes(machine));
+            }
 
-    const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
-    const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
-    const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
-    const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
+            const filteredTurno1Data = filteredLabels.map(machine => machineData[machine]["Turno 1"]);
+            const filteredTurno2Data = filteredLabels.map(machine => machineData[machine]["Turno 2"]);
+            const filteredTurno1Count = filteredLabels.map(machine => machineData[machine]["Turno 1 Count"]);
+            const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
 
-    // Calcular a média
-    const averageTurno1Data = filteredLabels.map((machine, index) => 
-        filteredTurno1Data[index] / filteredTurno1Count[index] // Calcular a média corretamente
-    );
-
-    const averageTurno2Data = filteredLabels.map((machine, index) => 
-        filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
-    );
-
-    createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
-});
-
+            const averageTurno1Data = filteredLabels.map((machine, index) => 
+                filteredTurno1Data[index] / filteredTurno1Count[index]
+            );
 
             const averageTurno2Data = filteredLabels.map((machine, index) => 
-                filteredTurno2Data[index] / filteredTurno2Count[index] // Calcular a média corretamente
+                filteredTurno2Data[index] / filteredTurno2Count[index]
             );
 
             createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
         });
 
         function createChart(selectedLabels, turno1Data, turno2Data) {
-    if (myChart) {
-        myChart.destroy();
-    }
+            if (myChart) {
+                myChart.destroy();
+            }
 
-    const ctx = document.getElementById('myChart').getContext('2d');
-    myChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: selectedLabels,
-            datasets: [
-                {
-                    label: 'Média de Produção Turno 1',
-                    data: turno1Data,
-                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1,
+            const ctx = document.getElementById('myChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: selectedLabels,
+                    datasets: [
+                        {
+                            label: 'Média de Produção Turno 1',
+                            data: turno1Data,
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Média de Produção Turno 2',
+                            data: turno2Data,
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
                 },
-                {
-                    label: 'Média de Produção Turno 2',
-                    data: turno2Data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                datalabels: {
-                    color: 'black',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: function(value) {
-                        return value.toFixed(2); // Formata para duas casas decimais
-                    }
-                },
-                annotation: {
-                    annotations: {
-                        line1: {
-                            type: 'line',
-                            yMin: 75,
-                            yMax: 75,
-                            borderColor: 'rgb(75, 192, 192)',
-                            borderWidth: 2,
-                            label: {
-                                content: 'Meta: 75',
-                                enabled: true,
-                                position: 'end'
+                options: {
+                    responsive: true,
+                    plugins: {
+                        datalabels: {
+                            color: 'black',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: function(value) {
+                                return value.toFixed(2);
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    yMin: 75,
+                                    yMax: 75,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Meta: 75',
+                                        enabled: true,
+                                        position: 'end'
+                                    }
+                                }
                             }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        },
-        plugins: [ChartDataLabels] // Registra o plugin de datalabels
-    });
-}
-
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
     </script>
 </body>
 </html>
