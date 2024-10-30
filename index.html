@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
+        /* Estilos */
         body {
             text-align: center;
             font-family: Arial, sans-serif;
@@ -165,11 +166,11 @@
             const filteredTurno2Count = filteredLabels.map(machine => machineData[machine]["Turno 2 Count"]);
 
             const averageTurno1Data = filteredLabels.map((machine, index) => 
-                filteredTurno1Data[index] / filteredTurno1Count[index]
+                filteredTurno1Data[index] / (filteredTurno1Count[index] || 1)
             );
 
             const averageTurno2Data = filteredLabels.map((machine, index) => 
-                filteredTurno2Data[index] / filteredTurno2Count[index]
+                filteredTurno2Data[index] / (filteredTurno2Count[index] || 1)
             );
 
             createChart(filteredLabels, averageTurno1Data, averageTurno2Data);
@@ -235,8 +236,7 @@
                             beginAtZero: true
                         }
                     }
-                },
-                plugins: [ChartDataLabels]
+                }
             });
         }
     </script>
