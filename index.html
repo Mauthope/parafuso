@@ -76,8 +76,9 @@
             data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         }
 
-        function parseExcelDate(excelDate) {
-            const jsDate = new Date((excelDate - (25567 + 1)) * 86400 * 1000);
+        function parseExcelDate(excelSerialDate) {
+            const excelEpoch = new Date(1899, 11, 30);
+            const jsDate = new Date(excelEpoch.getTime() + excelSerialDate * 86400000);
             return jsDate;
         }
 
@@ -97,7 +98,7 @@
         }
 
         function calculateEfficiency(data) {
-            return data.reduce((acc, row) => acc + row[8], 0) / data.length;
+            return data.reduce((acc, row) => acc + parseFloat(row[8]), 0) / data.length;
         }
 
         function updateChart(chart, filteredData, title) {
@@ -117,8 +118,8 @@
             const endDate = document.getElementById("endDate").value;
             const machine = document.getElementById("machineFilter").value;
 
-            const turno1Data = filterData(startDate, endDate, machine, 1);
-            const turno2Data = filterData(startDate, endDate, machine, 2);
+            const turno1Data = filterData(startDate, endDate, machine, "Turno 1");
+            const turno2Data = filterData(startDate, endDate, machine, "Turno 2");
 
             updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Turno 1");
             updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Turno 2");
