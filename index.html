@@ -82,6 +82,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
     <div id="dashboard">
@@ -214,19 +215,34 @@
             chartTurno1 = new Chart(document.getElementById('chartTurno1').getContext('2d'), {
                 type: 'bar',
                 data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(75, 192, 192, 0.6)' }] },
-                options: { plugins: { title: { display: true, text: '' } } }
+                options: { 
+                    plugins: { 
+                        title: { display: true, text: '' }, 
+                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
+                    } 
+                }
             });
 
             chartTurno2 = new Chart(document.getElementById('chartTurno2').getContext('2d'), {
                 type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(153, 102, 255, 0.6)' }] },
-                options: { plugins: { title: { display: true, text: '' } } }
+                data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] },
+                options: { 
+                    plugins: { 
+                        title: { display: true, text: '' }, 
+                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
+                    } 
+                }
             });
 
             comparativeChart = new Chart(document.getElementById('comparativeChart').getContext('2d'), {
                 type: 'bar',
                 data: { labels: [], datasets: [{ label: 'Média de Eficiência (%)', data: [], backgroundColor: 'rgba(255, 99, 132, 0.6)' }] },
-                options: { plugins: { title: { display: true, text: 'Comparativo de Eficiência por Período' } } }
+                options: { 
+                    plugins: { 
+                        title: { display: true, text: 'Comparativo de Eficiência por Período' }, 
+                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
+                    } 
+                }
             });
 
             updateDashboard();
