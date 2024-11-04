@@ -50,7 +50,7 @@
             </label>
             <label>
                 Máquina: 
-                <select id="machineFilter">
+                <select id="machineFilter" multiple size="4">
                     <option value="">Todas</option>
                 </select>
             </label>
@@ -82,7 +82,12 @@
             return jsDate;
         }
 
-        function filterData(startDate, endDate, machine, turno) {
+        function getSelectedMachines() {
+            const selectedOptions = Array.from(document.getElementById("machineFilter").selectedOptions);
+            return selectedOptions.map(option => option.value).filter(value => value !== "");
+        }
+
+        function filterData(startDate, endDate, machines, turno) {
             return data.filter((row, index) => {
                 if (index === 0) return false; // Ignorar a linha de cabeçalho
                 const date = parseExcelDate(row[7]);
@@ -91,7 +96,7 @@
                 return (
                     (!startDate || date >= new Date(startDate)) &&
                     (!endDate || date <= new Date(endDate)) &&
-                    (machine === "" || machineName === machine) &&
+                    (machines.length === 0 || machines.includes(machineName)) &&
                     shift === turno
                 );
             });
@@ -116,18 +121,19 @@
         async function updateDashboard() {
             const startDate = document.getElementById("startDate").value;
             const endDate = document.getElementById("endDate").value;
-            const machine = document.getElementById("machineFilter").value;
+            const machines = getSelectedMachines();
 
-            const turno1Data = filterData(startDate, endDate, machine, "Turno 1");
-            const turno2Data = filterData(startDate, endDate, machine, "Turno 2");
+            const turno1Data = filterData(startDate, endDate, machines, "Turno 1");
+            const turno2Data = filterData(startDate, endDate, machines, "Turno 2");
 
             updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Turno 1");
             updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Turno 2");
 
             const avgTurno1 = calculateEfficiency(turno1Data);
             const avgTurno2 = calculateEfficiency(turno2Data);
+            const overallAvg = calculateEfficiency([...turno1Data, ...turno2Data]);
             document.getElementById("efficiencyAverage").textContent = 
-                `Média de Eficiência: Turno 1 = ${avgTurno1.toFixed(2)}%, Turno 2 = ${avgTurno2.toFixed(2)}%`;
+                `Média de Eficiência: Turno 1 = ${avgTurno1.toFixed(2)}%, Turno 2 = ${avgTurno2.toFixed(2)}%, Média Geral = ${overallAvg.toFixed(2)}%`;
         }
 
         function populateMachineFilter() {
