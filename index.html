@@ -21,6 +21,7 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         #charts {
             display: flex;
@@ -44,9 +45,14 @@
     <div id="dashboard">
         <div id="filters">
             <label>
-                Período: 
-                <input type="date" id="startDate" placeholder="Data Inicial" />
-                <input type="date" id="endDate" placeholder="Data Final" />
+                Período 1:
+                <input type="date" id="startDate1" placeholder="Início do Período 1" />
+                <input type="date" id="endDate1" placeholder="Fim do Período 1" />
+            </label>
+            <label>
+                Período 2:
+                <input type="date" id="startDate2" placeholder="Início do Período 2" />
+                <input type="date" id="endDate2" placeholder="Fim do Período 2" />
             </label>
             <label>
                 Máquina: 
@@ -60,6 +66,7 @@
         <div id="charts">
             <canvas id="chartTurno1"></canvas>
             <canvas id="chartTurno2"></canvas>
+            <canvas id="comparativeChart"></canvas>
         </div>
         <div class="summary" id="efficiencyAverage"></div>
     </div>
@@ -87,17 +94,15 @@
             return selectedOptions.map(option => option.value).filter(value => value !== "");
         }
 
-        function filterData(startDate, endDate, machines, turno) {
+        function filterDataByDate(startDate, endDate, machines) {
             return data.filter((row, index) => {
                 if (index === 0) return false; // Ignorar a linha de cabeçalho
                 const date = parseExcelDate(row[7]);
                 const machineName = row[1];
-                const shift = row[0];
                 return (
                     (!startDate || date >= new Date(startDate)) &&
                     (!endDate || date <= new Date(endDate)) &&
-                    (machines.length === 0 || machines.includes(machineName)) &&
-                    shift === turno
+                    (machines.length === 0 || machines.includes(machineName))
                 );
             });
         }
@@ -119,21 +124,28 @@
         }
 
         async function updateDashboard() {
-            const startDate = document.getElementById("startDate").value;
-            const endDate = document.getElementById("endDate").value;
+            const startDate1 = document.getElementById("startDate1").value;
+            const endDate1 = document.getElementById("endDate1").value;
+            const startDate2 = document.getElementById("startDate2").value;
+            const endDate2 = document.getElementById("endDate2").value;
             const machines = getSelectedMachines();
 
-            const turno1Data = filterData(startDate, endDate, machines, "Turno 1");
-            const turno2Data = filterData(startDate, endDate, machines, "Turno 2");
+            // Filtrar e calcular média de eficiência para Turnos
+            const turno1Data = filterDataByDate(startDate1, endDate1, machines);
+            const turno2Data = filterDataByDate(startDate2, endDate2, machines);
 
-            updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Turno 1");
-            updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Turno 2");
+            updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Período 1");
+            updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Período 2");
 
             const avgTurno1 = calculateEfficiency(turno1Data);
             const avgTurno2 = calculateEfficiency(turno2Data);
-            const overallAvg = calculateEfficiency([...turno1Data, ...turno2Data]);
             document.getElementById("efficiencyAverage").textContent = 
-                `Média de Eficiência: Turno 1 = ${avgTurno1.toFixed(2)}%, Turno 2 = ${avgTurno2.toFixed(2)}%, Média Geral = ${overallAvg.toFixed(2)}%`;
+                `Média de Eficiência: Período 1 = ${avgTurno1.toFixed(2)}%, Período 2 = ${avgTurno2.toFixed(2)}%`;
+
+            // Atualizar gráfico comparativo entre períodos
+            comparativeChart.data.labels = ["Período 1", "Período 2"];
+            comparativeChart.data.datasets[0].data = [avgTurno1, avgTurno2];
+            comparativeChart.update();
         }
 
         function populateMachineFilter() {
@@ -148,7 +160,7 @@
             });
         }
 
-        let chartTurno1, chartTurno2;
+        let chartTurno1, chartTurno2, comparativeChart;
         async function initDashboard() {
             await loadExcelData();
             populateMachineFilter();
@@ -163,6 +175,12 @@
                 type: 'bar',
                 data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(153, 102, 255, 0.6)' }] },
                 options: { plugins: { title: { display: true, text: '' } } }
+            });
+
+            comparativeChart = new Chart(document.getElementById('comparativeChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: ["Período 1", "Período 2"], datasets: [{ label: 'Média de Eficiência (%)', data: [], backgroundColor: 'rgba(255, 159, 64, 0.6)' }] },
+                options: { plugins: { title: { display: true, text: 'Comparativo de Eficiência entre Períodos' } } }
             });
 
             updateDashboard();
