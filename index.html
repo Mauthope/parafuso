@@ -45,8 +45,8 @@
         <div id="filters">
             <label>
                 Período: 
-                <input type="number" id="startDate" placeholder="Data Inicial" />
-                <input type="number" id="endDate" placeholder="Data Final" />
+                <input type="date" id="startDate" placeholder="Data Inicial" />
+                <input type="date" id="endDate" placeholder="Data Final" />
             </label>
             <label>
                 Máquina: 
@@ -76,15 +76,20 @@
             data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         }
 
+        function parseExcelDate(excelDate) {
+            const jsDate = new Date((excelDate - (25567 + 1)) * 86400 * 1000);
+            return jsDate;
+        }
+
         function filterData(startDate, endDate, machine, turno) {
             return data.filter((row, index) => {
-                if (index === 0) return false; // Ignore header row
-                const date = row[7];
+                if (index === 0) return false; // Ignorar a linha de cabeçalho
+                const date = parseExcelDate(row[7]);
                 const machineName = row[1];
                 const shift = row[0];
                 return (
-                    date >= startDate && 
-                    date <= endDate &&
+                    (!startDate || date >= new Date(startDate)) &&
+                    (!endDate || date <= new Date(endDate)) &&
                     (machine === "" || machineName === machine) &&
                     shift === turno
                 );
@@ -108,8 +113,8 @@
         }
 
         async function updateDashboard() {
-            const startDate = parseInt(document.getElementById("startDate").value) || 0;
-            const endDate = parseInt(document.getElementById("endDate").value) || 999999;
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
             const machine = document.getElementById("machineFilter").value;
 
             const turno1Data = filterData(startDate, endDate, machine, 1);
