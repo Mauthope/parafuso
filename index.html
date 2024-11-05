@@ -129,14 +129,20 @@
 
     <script>
         let data = [];
-        
+
         async function loadExcelData() {
             const file = './acab.xlsx';
-            const response = await fetch(file);
-            const arrayBuffer = await response.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            try {
+                const response = await fetch(file);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                populateFilters();
+                updateDashboard();
+            } catch (error) {
+                console.error("Erro ao carregar o arquivo Excel:", error);
+            }
         }
 
         function parseExcelDate(excelSerialDate) {
@@ -231,28 +237,28 @@
         let chartTurno1, chartTurno2, comparativeChart;
         async function initDashboard() {
             await loadExcelData();
-            populateFilters();
 
-            chartTurno1 = new Chart(document.getElementById('chartTurno1').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: "Eficiência (%)", backgroundColor: "rgba(54, 162, 235, 0.7)", data: [] }] },
-                options: { plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } } }
-            });
+            const chartConfig = {
+                type: "bar",
+                data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "rgba(75, 192, 192, 0.6)" }] },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            };
 
-            chartTurno2 = new Chart(document.getElementById('chartTurno2').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: "Eficiência (%)", backgroundColor: "rgba(255, 99, 132, 0.7)", data: [] }] },
-                options: { plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } } }
-            });
+            chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
+            chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
 
             comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
                 type: "bar",
-                data: { labels: [], datasets: [{ label: "Média de Eficiência (%)", backgroundColor: "rgba(75, 192, 192, 0.7)", data: [] }] },
-                options: { plugins: { title: { display: true, text: "Comparação de Eficiência" }, datalabels: { anchor: "end", align: "top" } } }
+                data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência (%)", data: [], backgroundColor: ["#36a2eb", "#ff6384"] }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
             });
         }
 
-        document.addEventListener("DOMContentLoaded", initDashboard);
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
