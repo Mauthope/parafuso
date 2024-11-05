@@ -104,6 +104,12 @@
                     <option value="">Todas</option>
                 </select>
             </label>
+            <label>
+                Turno:
+                <select id="shiftFilter" multiple size="4">
+                    <option value="">Todos</option>
+                </select>
+            </label>
             <button onclick="updateDashboard()">Atualizar</button>
         </div>
         
@@ -139,20 +145,22 @@
             return jsDate;
         }
 
-        function getSelectedMachines() {
-            const selectedOptions = Array.from(document.getElementById("machineFilter").selectedOptions);
+        function getSelectedValues(elementId) {
+            const selectedOptions = Array.from(document.getElementById(elementId).selectedOptions);
             return selectedOptions.map(option => option.value).filter(value => value !== "");
         }
 
-        function filterDataByDate(startDate, endDate, machines) {
+        function filterDataByDate(startDate, endDate, machines, shifts) {
             return data.filter((row, index) => {
                 if (index === 0) return false;
                 const date = parseExcelDate(row[7]);
                 const machineName = row[1];
+                const shift = row[0];
                 return (
                     (!startDate || date >= new Date(startDate)) &&
                     (!endDate || date <= new Date(endDate)) &&
-                    (machines.length === 0 || machines.includes(machineName))
+                    (machines.length === 0 || machines.includes(machineName)) &&
+                    (shifts.length === 0 || shifts.includes(shift))
                 );
             });
         }
@@ -178,10 +186,11 @@
             const endDate1 = document.getElementById("endDate1").value;
             const startDate2 = document.getElementById("startDate2").value;
             const endDate2 = document.getElementById("endDate2").value;
-            const machines = getSelectedMachines();
+            const machines = getSelectedValues("machineFilter");
+            const shifts = getSelectedValues("shiftFilter");
 
-            const turno1Data = filterDataByDate(startDate1, endDate1, machines);
-            const turno2Data = filterDataByDate(startDate2, endDate2, machines);
+            const turno1Data = filterDataByDate(startDate1, endDate1, machines, shifts);
+            const turno2Data = filterDataByDate(startDate2, endDate2, machines, shifts);
 
             updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Período 1");
             updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Período 2");
@@ -196,8 +205,10 @@
             comparativeChart.update();
         }
 
-        function populateMachineFilter() {
+        function populateFilters() {
             const machines = [...new Set(data.slice(1).map(row => row[1]))];
+            const shifts = [...new Set(data.slice(1).map(row => row[0]))];
+
             const machineFilter = document.getElementById("machineFilter");
             machineFilter.innerHTML = '<option value="">Todas</option>';
             machines.forEach(machine => {
@@ -206,50 +217,42 @@
                 option.textContent = machine;
                 machineFilter.appendChild(option);
             });
+
+            const shiftFilter = document.getElementById("shiftFilter");
+            shiftFilter.innerHTML = '<option value="">Todos</option>';
+            shifts.forEach(shift => {
+                const option = document.createElement("option");
+                option.value = shift;
+                option.textContent = shift;
+                shiftFilter.appendChild(option);
+            });
         }
 
         let chartTurno1, chartTurno2, comparativeChart;
         async function initDashboard() {
             await loadExcelData();
-            populateMachineFilter();
+            populateFilters();
 
             chartTurno1 = new Chart(document.getElementById('chartTurno1').getContext('2d'), {
                 type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(75, 192, 192, 0.6)' }] },
-                options: { 
-                    plugins: { 
-                        title: { display: true, text: '' }, 
-                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
-                    } 
-                }
+                data: { labels: [], datasets: [{ label: "Eficiência (%)", backgroundColor: "rgba(54, 162, 235, 0.7)", data: [] }] },
+                options: { plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } } }
             });
 
             chartTurno2 = new Chart(document.getElementById('chartTurno2').getContext('2d'), {
                 type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Eficiência (%)', data: [], backgroundColor: 'rgba(54, 162, 235, 0.6)' }] },
-                options: { 
-                    plugins: { 
-                        title: { display: true, text: '' }, 
-                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
-                    } 
-                }
+                data: { labels: [], datasets: [{ label: "Eficiência (%)", backgroundColor: "rgba(255, 99, 132, 0.7)", data: [] }] },
+                options: { plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } } }
             });
 
-            comparativeChart = new Chart(document.getElementById('comparativeChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Média de Eficiência (%)', data: [], backgroundColor: 'rgba(255, 99, 132, 0.6)' }] },
-                options: { 
-                    plugins: { 
-                        title: { display: true, text: 'Comparativo de Eficiência por Período' }, 
-                        datalabels: { anchor: 'end', align: 'top', formatter: Math.round }
-                    } 
-                }
+            comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
+                type: "bar",
+                data: { labels: [], datasets: [{ label: "Média de Eficiência (%)", backgroundColor: "rgba(75, 192, 192, 0.7)", data: [] }] },
+                options: { plugins: { title: { display: true, text: "Comparação de Eficiência" }, datalabels: { anchor: "end", align: "top" } } }
             });
-
-            updateDashboard();
         }
 
-        window.onload = initDashboard;
+        document.addEventListener("DOMContentLoaded", initDashboard);
     </script>
 </body>
 </html>
