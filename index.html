@@ -240,7 +240,7 @@
         // Registrar o plugin de datalabels no Chart.js
         Chart.register(ChartDataLabels);
              // Configuração base para os gráficos de turno
-        const chartConfig = {
+                const chartConfig = {
             type: "bar",
             data: {
                 labels: [],  // Insira os rótulos das barras aqui
@@ -273,6 +273,51 @@
                 }
             }
         };
+
+        // Inicializando os gráficos de turno com a configuração base
+        const chartTurno1 = new Chart(
+            document.getElementById("chartTurno1").getContext("2d"),
+            JSON.parse(JSON.stringify(chartConfig))
+        );
+
+        const chartTurno2 = new Chart(
+            document.getElementById("chartTurno2").getContext("2d"),
+            JSON.parse(JSON.stringify(chartConfig))
+        );
+
+        // Configuração para o gráfico comparativo
+        const comparativeChart = new Chart(
+            document.getElementById("comparativeChart").getContext("2d"),
+            {
+                type: "bar",
+                data: {
+                    labels: ["Período 1", "Período 2"],
+                    datasets: [{
+                        label: "Média de Eficiência (%)",
+                        data: [],  // Insira os dados aqui
+                        backgroundColor: ["#36a2eb", "#ff6384"]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        datalabels: {
+                            display: true,
+                            color: 'black',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => value.toFixed(2) + '%'
+                        }
+                    }
+                }
+            }
+        );
 
             chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
             chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
