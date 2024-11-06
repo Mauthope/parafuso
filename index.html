@@ -128,10 +128,118 @@
     </div>
 
     <script>
+        let data = [];
+
+        async function loadExcelData() {
+            const file = './acab.xlsx';
+            try {
+                const response = await fetch(file);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                populateFilters();
+                updateDashboard();
+            } catch (error) {
+                console.error("Erro ao carregar o arquivo Excel:", error);
+            }
+        }
+
+        function parseExcelDate(excelSerialDate) {
+            const excelEpoch = new Date(1899, 11, 30);
+            const jsDate = new Date(excelEpoch.getTime() + excelSerialDate * 86400000);
+            return jsDate;
+        }
+
+        function getSelectedValues(elementId) {
+            const selectedOptions = Array.from(document.getElementById(elementId).selectedOptions);
+            return selectedOptions.map(option => option.value).filter(value => value !== "");
+        }
+
+        function filterDataByDate(startDate, endDate, machines, shifts) {
+            return data.filter((row, index) => {
+                if (index === 0) return false;
+                const date = parseExcelDate(row[7]);
+                const machineName = row[1];
+                const shift = row[0];
+                return (
+                    (!startDate || date >= new Date(startDate)) &&
+                    (!endDate || date <= new Date(endDate)) &&
+                    (machines.length === 0 || machines.includes(machineName)) &&
+                    (shifts.length === 0 || shifts.includes(shift))
+                );
+            });
+        }
+
+        function calculateEfficiency(data) {
+            return data.reduce((acc, row) => acc + parseFloat(row[8]), 0) / data.length;
+        }
+
+        function updateChart(chart, filteredData, title) {
+            const machines = [...new Set(filteredData.map(row => row[1]))];
+            const efficiencies = machines.map(machine => {
+                const machineData = filteredData.filter(row => row[1] === machine);
+                return calculateEfficiency(machineData);
+            });
+            chart.data.labels = machines;
+            chart.data.datasets[0].data = efficiencies;
+            chart.options.plugins.title.text = title;
+            chart.update();
+        }
+
+        async function updateDashboard() {
+            const startDate1 = document.getElementById("startDate1").value;
+            const endDate1 = document.getElementById("endDate1").value;
+            const startDate2 = document.getElementById("startDate2").value;
+            const endDate2 = document.getElementById("endDate2").value;
+            const machines = getSelectedValues("machineFilter");
+            const shifts = getSelectedValues("shiftFilter");
+
+            const turno1Data = filterDataByDate(startDate1, endDate1, machines, shifts);
+            const turno2Data = filterDataByDate(startDate2, endDate2, machines, shifts);
+
+            updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Período 1");
+            updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Período 2");
+
+            const avgTurno1 = calculateEfficiency(turno1Data);
+            const avgTurno2 = calculateEfficiency(turno2Data);
+            document.getElementById("efficiencyAverage").textContent = 
+                Média de Eficiência: Período 1 = ${avgTurno1.toFixed(2)}%, Período 2 = ${avgTurno2.toFixed(2)}%;
+
+            comparativeChart.data.labels = ["Período 1", "Período 2"];
+            comparativeChart.data.datasets[0].data = [avgTurno1, avgTurno2];
+            comparativeChart.update();
+        }
+
+        function populateFilters() {
+            const machines = [...new Set(data.slice(1).map(row => row[1]))];
+            const shifts = [...new Set(data.slice(1).map(row => row[0]))];
+
+            const machineFilter = document.getElementById("machineFilter");
+            machineFilter.innerHTML = '<option value="">Todas</option>';
+            machines.forEach(machine => {
+                const option = document.createElement("option");
+                option.value = machine;
+                option.textContent = machine;
+                machineFilter.appendChild(option);
+            });
+
+            const shiftFilter = document.getElementById("shiftFilter");
+            shiftFilter.innerHTML = '<option value="">Todos</option>';
+            shifts.forEach(shift => {
+                const option = document.createElement("option");
+                option.value = shift;
+                option.textContent = shift;
+                shiftFilter.appendChild(option);
+            });
+        }
+
+        let chartTurno1, chartTurno2, comparativeChart;
+        async function initDashboard() {
+            await loadExcelData();
         // Registrar o plugin de datalabels no Chart.js
         Chart.register(ChartDataLabels);
-
-        // Configuração base para os gráficos de turno
+             // Configuração base para os gráficos de turno
         const chartConfig = {
             type: "bar",
             data: {
@@ -166,62 +274,17 @@
             }
         };
 
-        // Inicializando os gráficos de turno com a configuração base
-        const chartTurno1 = new Chart(
-            document.getElementById("chartTurno1").getContext("2d"),
-            JSON.parse(JSON.stringify(chartConfig))
-        );
+            chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
+            chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
 
-        const chartTurno2 = new Chart(
-            document.getElementById("chartTurno2").getContext("2d"),
-            JSON.parse(JSON.stringify(chartConfig))
-        );
-
-        // Configuração para o gráfico comparativo
-        const comparativeChart = new Chart(
-            document.getElementById("comparativeChart").getContext("2d"),
-            {
+            comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
                 type: "bar",
-                data: {
-                    labels: ["Período 1", "Período 2"],
-                    datasets: [{
-                        label: "Média de Eficiência (%)",
-                        data: [],  // Insira os dados aqui
-                        backgroundColor: ["#36a2eb", "#ff6384"]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    },
-                    plugins: {
-                        datalabels: {
-                            display: true,
-                            color: 'black',
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: (value) => value.toFixed(2) + '%'
-                        }
-                    }
-                }
-            }
-        );
+                data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência (%)", data: [], backgroundColor: ["#36a2eb", "#ff6384"] }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
 
-        // Exemplo de dados para os gráficos (opcional)
-        chartTurno1.data.labels = ["Operador A", "Operador B", "Operador C"];
-        chartTurno1.data.datasets[0].data = [75.5, 88.3, 92.1];
-        chartTurno1.update();
-
-        chartTurno2.data.labels = ["Operador D", "Operador E", "Operador F"];
-        chartTurno2.data.datasets[0].data = [65.4, 77.2, 81.5];
-        chartTurno2.update();
-
-        comparativeChart.data.datasets[0].data = [82.3, 76.9];
-        comparativeChart.update();
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
