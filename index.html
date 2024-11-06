@@ -237,7 +237,8 @@
         let chartTurno1, chartTurno2, comparativeChart;
         async function initDashboard() {
             await loadExcelData();
-
+// Registrar o plugin de datalabels
+Chart.register(ChartDataLabels);
             const chartConfig = {
     type: "bar",
     data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "rgba(75, 192, 192, 0.6)" }] },
@@ -259,15 +260,25 @@
 
 
             chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
-            chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
+chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
 
-            comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
-                type: "bar",
-                data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência (%)", data: [], backgroundColor: ["#36a2eb", "#ff6384"] }] },
-                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-            });
+comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
+    type: "bar",
+    data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência (%)", data: [], backgroundColor: ["#36a2eb", "#ff6384"] }] },
+    options: { 
+        responsive: true, 
+        scales: { y: { beginAtZero: true, max: 100 } },
+        plugins: {
+            datalabels: { 
+                display: true, 
+                color: 'black', 
+                anchor: 'end', 
+                align: 'top', 
+                formatter: (value) => value.toFixed(2) + '%' 
+            }
         }
-
+    }
+});
         window.onload = initDashboard;
     </script>
 </body>
