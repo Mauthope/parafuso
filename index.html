@@ -3,147 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráficos com Rótulos de Dados</title>
+    <title>Dashboard de Eficiência</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        #dashboard {
+            width: 90%;
+            max-width: 1400px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #filters label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9em;
+        }
+        #filters input, #filters select {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        #filters button {
+            padding: 8px 15px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #filters button:hover {
+            background-color: #0056b3;
+        }
+        #charts {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+        }
+        .summary {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
-    <canvas id="turno1" width="400" height="200"></canvas>
-    <canvas id="turno2" width="400" height="200"></canvas>
-    <canvas id="comparativo" width="400" height="200"></canvas>
+    <div id="dashboard">
+        <div id="filters">
+            <label>
+                Período 1:
+                <input type="date" id="startDate1" placeholder="Início do Período 1" />
+                <input type="date" id="endDate1" placeholder="Fim do Período 1" />
+            </label>
+            <label>
+                Período 2:
+                <input type="date" id="startDate2" placeholder="Início do Período 2" />
+                <input type="date" id="endDate2" placeholder="Fim do Período 2" />
+            </label>
+            <label>
+                Máquina: 
+                <select id="machineFilter" multiple size="4">
+                    <option value="">Todas</option>
+                </select>
+            </label>
+            <label>
+                Turno:
+                <select id="shiftFilter" multiple size="4">
+                    <option value="">Todos</option>
+                </select>
+            </label>
+            <button onclick="updateDashboard()">Atualizar</button>
+        </div>
+        
+        <div id="charts">
+            <div class="chart-container">
+                <canvas id="chartTurno1"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartTurno2"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="comparativeChart"></canvas>
+            </div>
+        </div>
+        <div class="summary" id="efficiencyAverage"></div>
+    </div>
 
     <script>
-        // Registrar o plugin de datalabels no Chart.js
-        Chart.register(ChartDataLabels);
+        let data = [];
 
-        // Configuração dos dados e opções para o gráfico do turno 1
-        const turno1Data = {
-            labels: ["Operador A", "Operador B", "Operador C"],
-            datasets: [{
-                label: "Eficiência (%) - Turno 1",
-                data: [75.5, 88.3, 92.1],
-                backgroundColor: "rgba(75, 192, 192, 0.6)"
-            }]
-        };
+        async function loadExcelData() {
+            const file = './acab.xlsx';
+            try {
+                const response = await fetch(file);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                populateFilters();
+                updateDashboard();
+            } catch (error) {
+                console.error("Erro ao carregar o arquivo Excel:", error);
+            }
+        }
 
-        const turno1Options = {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Eficiência dos Operadores - Turno 1"
+        function parseExcelDate(excelSerialDate) {
+            const excelEpoch = new Date(1899, 11, 30);
+            const jsDate = new Date(excelEpoch.getTime() + excelSerialDate * 86400000);
+            return jsDate;
+        }
+
+        function getSelectedValues(elementId) {
+            const selectedOptions = Array.from(document.getElementById(elementId).selectedOptions);
+            return selectedOptions.map(option => option.value).filter(value => value !== "");
+        }
+
+        function filterDataByDate(startDate, endDate, machines, shifts) {
+            return data.filter((row, index) => {
+                if (index === 0) return false;
+                const date = parseExcelDate(row[7]);
+                const machineName = row[1];
+                const shift = row[0];
+                return (
+                    (!startDate || date >= new Date(startDate)) &&
+                    (!endDate || date <= new Date(endDate)) &&
+                    (machines.length === 0 || machines.includes(machineName)) &&
+                    (shifts.length === 0 || shifts.includes(shift))
+                );
+            });
+        }
+
+        function calculateEfficiency(data) {
+            return data.reduce((acc, row) => acc + parseFloat(row[8]), 0) / data.length;
+        }
+
+        function updateChart(chart, filteredData, title) {
+            const machines = [...new Set(filteredData.map(row => row[1]))];
+            const efficiencies = machines.map(machine => {
+                const machineData = filteredData.filter(row => row[1] === machine);
+                return calculateEfficiency(machineData);
+            });
+            chart.data.labels = machines;
+            chart.data.datasets[0].data = efficiencies;
+            chart.options.plugins.title.text = title;
+            chart.update();
+        }
+
+        async function updateDashboard() {
+            const startDate1 = document.getElementById("startDate1").value;
+            const endDate1 = document.getElementById("endDate1").value;
+            const startDate2 = document.getElementById("startDate2").value;
+            const endDate2 = document.getElementById("endDate2").value;
+            const machines = getSelectedValues("machineFilter");
+            const shifts = getSelectedValues("shiftFilter");
+
+            const turno1Data = filterDataByDate(startDate1, endDate1, machines, shifts);
+            const turno2Data = filterDataByDate(startDate2, endDate2, machines, shifts);
+
+            updateChart(chartTurno1, turno1Data, "Eficiência por Máquina - Período 1");
+            updateChart(chartTurno2, turno2Data, "Eficiência por Máquina - Período 2");
+
+            const avgTurno1 = calculateEfficiency(turno1Data);
+            const avgTurno2 = calculateEfficiency(turno2Data);
+            document.getElementById("efficiencyAverage").textContent = 
+                `Média de Eficiência: Período 1 = ${avgTurno1.toFixed(2)}%, Período 2 = ${avgTurno2.toFixed(2)}%`;
+
+            comparativeChart.data.labels = ["Período 1", "Período 2"];
+            comparativeChart.data.datasets[0].data = [avgTurno1, avgTurno2];
+            comparativeChart.update();
+        }
+
+        function populateFilters() {
+            const machines = [...new Set(data.slice(1).map(row => row[1]))];
+            const shifts = [...new Set(data.slice(1).map(row => row[0]))];
+
+            const machineFilter = document.getElementById("machineFilter");
+            machineFilter.innerHTML = '<option value="">Todas</option>';
+            machines.forEach(machine => {
+                const option = document.createElement("option");
+                option.value = machine;
+                option.textContent = machine;
+                machineFilter.appendChild(option);
+            });
+
+            const shiftFilter = document.getElementById("shiftFilter");
+            shiftFilter.innerHTML = '<option value="">Todos</option>';
+            shifts.forEach(shift => {
+                const option = document.createElement("option");
+                option.value = shift;
+                option.textContent = shift;
+                shiftFilter.appendChild(option);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadExcelData);
+
+        const chartTurno1 = new Chart(document.getElementById("chartTurno1"), {
+            type: "bar",
+            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "blue" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
+                    title: { display: true, text: "" }
                 },
-                datalabels: {
-                    display: true,
-                    color: 'black',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: (value) => value.toFixed(2) + '%'  // Exibe o valor com duas casas decimais seguido de "%"
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100  // Define o limite máximo do eixo y como 100%
-                }
+                responsive: true
             }
-        };
+        });
 
-        // Inicializar o gráfico do turno 1
-        const turno1Chart = new Chart(
-            document.getElementById("turno1").getContext("2d"),
-            {
-                type: "bar",
-                data: turno1Data,
-                options: turno1Options
-            }
-        );
-
-        // Configuração dos dados e opções para o gráfico do turno 2
-        const turno2Data = {
-            labels: ["Operador D", "Operador E", "Operador F"],
-            datasets: [{
-                label: "Eficiência (%) - Turno 2",
-                data: [65.4, 77.2, 81.5],
-                backgroundColor: "rgba(153, 102, 255, 0.6)"
-            }]
-        };
-
-        const turno2Options = {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Eficiência dos Operadores - Turno 2"
+        const chartTurno2 = new Chart(document.getElementById("chartTurno2"), {
+            type: "bar",
+            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "green" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
+                    title: { display: true, text: "" }
                 },
-                datalabels: {
-                    display: true,
-                    color: 'black',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: (value) => value.toFixed(2) + '%'  // Exibe o valor com duas casas decimais seguido de "%"
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
+                responsive: true
             }
-        };
+        });
 
-        // Inicializar o gráfico do turno 2
-        const turno2Chart = new Chart(
-            document.getElementById("turno2").getContext("2d"),
-            {
-                type: "bar",
-                data: turno2Data,
-                options: turno2Options
-            }
-        );
-
-        // Configuração dos dados e opções para o gráfico comparativo
-        const comparativoData = {
-            labels: ["Período 1", "Período 2"],
-            datasets: [{
-                label: "Média de Eficiência (%)",
-                data: [82.3, 76.9],
-                backgroundColor: ["#36a2eb", "#ff6384"]
-            }]
-        };
-
-        const comparativoOptions = {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Comparativo de Eficiência"
+        const comparativeChart = new Chart(document.getElementById("comparativeChart"), {
+            type: "bar",
+            data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência", data: [], backgroundColor: "orange" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "black", align: "end", anchor: "end" },
+                    title: { display: true, text: "Comparativo de Eficiência" }
                 },
-                datalabels: {
-                    display: true,
-                    color: 'black',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: (value) => value.toFixed(2) + '%'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
+                responsive: true
             }
-        };
-
-        // Inicializar o gráfico comparativo
-        const comparativoChart = new Chart(
-            document.getElementById("comparativo").getContext("2d"),
-            {
-                type: "bar",
-                data: comparativoData,
-                options: comparativoOptions
-            }
-        );
+        });
     </script>
 </body>
 </html>
