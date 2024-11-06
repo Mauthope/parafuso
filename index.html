@@ -239,14 +239,24 @@
             await loadExcelData();
 
             const chartConfig = {
-                type: "bar",
-                data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "rgba(75, 192, 192, 0.6)" }] },
-                options: {
-                    responsive: true,
-                    plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } },
-                    scales: { y: { beginAtZero: true, max: 100 } }
-                }
-            };
+    type: "bar",
+    data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "rgba(75, 192, 192, 0.6)" }] },
+    options: {
+        responsive: true,
+        plugins: { 
+            title: { display: true, text: "" }, 
+            datalabels: { 
+                display: true, 
+                color: 'black', 
+                anchor: 'end', 
+                align: 'top', 
+                formatter: (value) => value.toFixed(2) + '%' 
+            }
+        },
+        scales: { y: { beginAtZero: true, max: 100 } }
+    }
+};
+
 
             chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
             chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
