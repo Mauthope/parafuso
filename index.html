@@ -236,41 +236,101 @@
 
         document.addEventListener("DOMContentLoaded", loadExcelData);
 
-        const chartTurno1 = new Chart(document.getElementById("chartTurno1"), {
-            type: "bar",
-            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "blue" }] },
-            options: {
-                plugins: {
-                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
-                    title: { display: true, text: "" }
+const chartTurno1 = new Chart(document.getElementById("chartTurno1"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Eficiência (%)",
+                data: [],
+                backgroundColor: "blue"
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: "white",
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    align: 'end',
+                    anchor: 'end',
+                    formatter: (value) => `${value.toFixed(2)}%`
                 },
-                responsive: true
-            }
-        });
+                title: {
+                    display: true,
+                    text: ""
+                }
+            },
+            responsive: true
+        }
+    });
 
-        const chartTurno2 = new Chart(document.getElementById("chartTurno2"), {
-            type: "bar",
-            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "green" }] },
-            options: {
-                plugins: {
-                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
-                    title: { display: true, text: "" }
+    const chartTurno2 = new Chart(document.getElementById("chartTurno2"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Eficiência (%)",
+                data: [],
+                backgroundColor: "green"
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: "white",
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    align: 'end',
+                    anchor: 'end',
+                    formatter: (value) => `${value.toFixed(2)}%`
                 },
-                responsive: true
-            }
-        });
+                title: {
+                    display: true,
+                    text: ""
+                }
+            },
+            responsive: true
+        }
+    });
 
-        const comparativeChart = new Chart(document.getElementById("comparativeChart"), {
-            type: "bar",
-            data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência", data: [], backgroundColor: "orange" }] },
-            options: {
-                plugins: {
-                    datalabels: { display: true, color: "black", align: "end", anchor: "end" },
-                    title: { display: true, text: "Comparativo de Eficiência" }
+    const comparativeChart = new Chart(document.getElementById("comparativeChart"), {
+        type: "bar",
+        data: {
+            labels: ["Período 1", "Período 2"],
+            datasets: [{
+                label: "Média de Eficiência",
+                data: [],
+                backgroundColor: "orange"
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: "black",
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    align: 'end',
+                    anchor: 'end',
+                    formatter: (value) => `${value.toFixed(2)}%`
                 },
-                responsive: true
-            }
-        });
+                title: {
+                    display: true,
+                    text: "Comparativo de Eficiência"
+                }
+            },
+            responsive: true
+        }
+    });
     </script>
 </body>
 </html>
