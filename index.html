@@ -3,14 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráficos com Rótulos de Dados</title>
+    <title>Dashboard de Eficiência</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        #dashboard {
+            width: 90%;
+            max-width: 1400px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #filters label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9em;
+        }
+        #filters input, #filters select {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        #filters button {
+            padding: 8px 15px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #filters button:hover {
+            background-color: #0056b3;
+        }
+        #charts {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+        }
+        .summary {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
-    <canvas id="chartTurno1" width="400" height="200"></canvas>
-    <canvas id="chartTurno2" width="400" height="200"></canvas>
-    <canvas id="comparativeChart" width="400" height="200"></canvas>
+    <div id="dashboard">
+        <div id="filters">
+            <label>
+                Período 1:
+                <input type="date" id="startDate1" placeholder="Início do Período 1" />
+                <input type="date" id="endDate1" placeholder="Fim do Período 1" />
+            </label>
+            <label>
+                Período 2:
+                <input type="date" id="startDate2" placeholder="Início do Período 2" />
+                <input type="date" id="endDate2" placeholder="Fim do Período 2" />
+            </label>
+            <label>
+                Máquina: 
+                <select id="machineFilter" multiple size="4">
+                    <option value="">Todas</option>
+                </select>
+            </label>
+            <label>
+                Turno:
+                <select id="shiftFilter" multiple size="4">
+                    <option value="">Todos</option>
+                </select>
+            </label>
+            <button onclick="updateDashboard()">Atualizar</button>
+        </div>
+        
+        <div id="charts">
+            <div class="chart-container">
+                <canvas id="chartTurno1"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartTurno2"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="comparativeChart"></canvas>
+            </div>
+        </div>
+        <div class="summary" id="efficiencyAverage"></div>
+    </div>
 
     <script>
         // Registrar o plugin de datalabels no Chart.js
