@@ -204,7 +204,7 @@
             const avgTurno1 = calculateEfficiency(turno1Data);
             const avgTurno2 = calculateEfficiency(turno2Data);
             document.getElementById("efficiencyAverage").textContent = 
-                Média de Eficiência: Período 1 = ${avgTurno1.toFixed(2)}%, Período 2 = ${avgTurno2.toFixed(2)}%;
+                `Média de Eficiência: Período 1 = ${avgTurno1.toFixed(2)}%, Período 2 = ${avgTurno2.toFixed(2)}%`;
 
             comparativeChart.data.labels = ["Período 1", "Período 2"];
             comparativeChart.data.datasets[0].data = [avgTurno1, avgTurno2];
@@ -234,31 +234,43 @@
             });
         }
 
-        let chartTurno1, chartTurno2, comparativeChart;
-        async function initDashboard() {
-            await loadExcelData();
+        document.addEventListener("DOMContentLoaded", loadExcelData);
 
-            const chartConfig = {
-                type: "bar",
-                data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "rgba(75, 192, 192, 0.6)" }] },
-                options: {
-                    responsive: true,
-                    plugins: { title: { display: true, text: "" }, datalabels: { anchor: "end", align: "top" } },
-                    scales: { y: { beginAtZero: true, max: 100 } }
-                }
-            };
+        const chartTurno1 = new Chart(document.getElementById("chartTurno1"), {
+            type: "bar",
+            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "blue" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
+                    title: { display: true, text: "" }
+                },
+                responsive: true
+            }
+        });
 
-            chartTurno1 = new Chart(document.getElementById("chartTurno1").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
-            chartTurno2 = new Chart(document.getElementById("chartTurno2").getContext("2d"), JSON.parse(JSON.stringify(chartConfig)));
+        const chartTurno2 = new Chart(document.getElementById("chartTurno2"), {
+            type: "bar",
+            data: { labels: [], datasets: [{ label: "Eficiência (%)", data: [], backgroundColor: "green" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "white", align: "end", anchor: "end" },
+                    title: { display: true, text: "" }
+                },
+                responsive: true
+            }
+        });
 
-            comparativeChart = new Chart(document.getElementById("comparativeChart").getContext("2d"), {
-                type: "bar",
-                data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência (%)", data: [], backgroundColor: ["#36a2eb", "#ff6384"] }] },
-                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-            });
-        }
-
-        window.onload = initDashboard;
+        const comparativeChart = new Chart(document.getElementById("comparativeChart"), {
+            type: "bar",
+            data: { labels: ["Período 1", "Período 2"], datasets: [{ label: "Média de Eficiência", data: [], backgroundColor: "orange" }] },
+            options: {
+                plugins: {
+                    datalabels: { display: true, color: "black", align: "end", anchor: "end" },
+                    title: { display: true, text: "Comparativo de Eficiência" }
+                },
+                responsive: true
+            }
+        });
     </script>
 </body>
 </html>
